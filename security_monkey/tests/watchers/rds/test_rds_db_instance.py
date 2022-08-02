@@ -45,4 +45,5 @@ class RDSDBInstanceWatcherTestCase(SecurityMonkeyWatcherTestCase):
         self.assertIs(
             expr1=len(item_list),
             expr2=1,
-            msg="Watcher should have 1 item but has {}".format(len(item_list)))
+            msg=f"Watcher should have 1 item but has {len(item_list)}",
+        )

@@ -72,13 +72,23 @@ class IAMRoleTestCase(SecurityMonkeyTestCase):
             ]
         }
 
-        for x in range(0, self.total_roles):
+        for x in range(self.total_roles):
             # Create the IAM Role via Moto:
-            aspd["Statement"][0]["Resource"] = ARN_PREFIX + "arn:aws:iam:012345678910:role/roleNumber{}".format(x)
-            client.create_role(Path="/", RoleName="roleNumber{}".format(x),
-                               AssumeRolePolicyDocument=json.dumps(aspd, indent=4))
-            client.put_role_policy(RoleName="roleNumber{}".format(x), PolicyName="testpolicy",
-                                   PolicyDocument=json.dumps(policy, indent=4))
+            aspd["Statement"][0]["Resource"] = (
+                ARN_PREFIX + f"arn:aws:iam:012345678910:role/roleNumber{x}"
+            )
+
+            client.create_role(
+                Path="/",
+                RoleName=f"roleNumber{x}",
+                AssumeRolePolicyDocument=json.dumps(aspd, indent=4),
+            )
+
+            client.put_role_policy(
+                RoleName=f"roleNumber{x}",
+                PolicyName="testpolicy",
+                PolicyDocument=json.dumps(policy, indent=4),
+            )
 
     def test_slurp_list(self):
         mock_sts().start()
@@ -205,13 +215,23 @@ class IAMRoleSkipTestCase(SecurityMonkeyTestCase):
             ]
         }
 
-        for x in range(0, self.total_roles):
+        for x in range(self.total_roles):
             # Create the IAM Role via Moto:
-            aspd["Statement"][0]["Resource"] = ARN_PREFIX + "arn:aws:iam:012345678910:role/roleNumber{}".format(x)
-            client.create_role(Path="/", RoleName="roleNumber{}".format(x),
-                               AssumeRolePolicyDocument=json.dumps(aspd, indent=4))
-            client.put_role_policy(RoleName="roleNumber{}".format(x), PolicyName="testpolicy",
-                                   PolicyDocument=json.dumps(policy, indent=4))
+            aspd["Statement"][0]["Resource"] = (
+                ARN_PREFIX + f"arn:aws:iam:012345678910:role/roleNumber{x}"
+            )
+
+            client.create_role(
+                Path="/",
+                RoleName=f"roleNumber{x}",
+                AssumeRolePolicyDocument=json.dumps(aspd, indent=4),
+            )
+
+            client.put_role_policy(
+                RoleName=f"roleNumber{x}",
+                PolicyName="testpolicy",
+                PolicyDocument=json.dumps(policy, indent=4),
+            )
 
     def test_slurp_items_with_skipped(self):
         mock_sts().start()

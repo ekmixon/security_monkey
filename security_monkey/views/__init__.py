@@ -21,12 +21,12 @@ from flask_restful import fields, marshal, Resource, reqparse
 from flask_login import current_user
 
 ORIGINS = [
-    'https://{}:{}'.format(app.config.get('FQDN'), app.config.get('WEB_PORT')),
-    # Adding this next one so you can also access the dart UI by prepending /static to the path.
-    'https://{}:{}'.format(app.config.get('FQDN'), app.config.get('API_PORT')),
-    'https://{}:{}'.format(app.config.get('FQDN'), app.config.get('NGINX_PORT')),
-    'https://{}:80'.format(app.config.get('FQDN'))
+    f"https://{app.config.get('FQDN')}:{app.config.get('WEB_PORT')}",
+    f"https://{app.config.get('FQDN')}:{app.config.get('API_PORT')}",
+    f"https://{app.config.get('FQDN')}:{app.config.get('NGINX_PORT')}",
+    f"https://{app.config.get('FQDN')}:80",
 ]
+
 
 ##### Marshal Datastructures #####
 
@@ -168,16 +168,18 @@ class AuthenticatedService(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         super(AuthenticatedService, self).__init__()
-        self.auth_dict = dict()
+        self.auth_dict = {}
         if current_user.is_authenticated:
-            roles_marshal = []
-            for role in current_user.roles:
-                roles_marshal.append(marshal(role.__dict__, ROLE_FIELDS))
+            roles_marshal = [
+                marshal(role.__dict__, ROLE_FIELDS) for role in current_user.roles
+            ]
 
             roles_marshal.append({"name": current_user.role})
 
-            for role in RBACRole.roles[current_user.role].get_parents():
-                roles_marshal.append({"name": role.name})
+            roles_marshal.extend(
+                {"name": role.name}
+                for role in RBACRole.roles[current_user.role].get_parents()
+            )
 
             self.auth_dict = {
                 "authenticated": True,
@@ -186,9 +188,9 @@ class AuthenticatedService(Resource):
             }
         else:
             if app.config.get('FRONTED_BY_NGINX'):
-                url = "https://{}:{}{}".format(app.config.get('FQDN'), app.config.get('NGINX_PORT'), '/login')
+                url = f"https://{app.config.get('FQDN')}:{app.config.get('NGINX_PORT')}/login"
             else:
-                url = "http://{}:{}{}".format(app.config.get('FQDN'), app.config.get('API_PORT'), '/login')
+                url = f"http://{app.config.get('FQDN')}:{app.config.get('API_PORT')}/login"
             self.auth_dict = {
                 "authenticated": False,
                 "user": None,

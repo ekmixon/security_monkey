@@ -49,9 +49,14 @@ class ItemApiTestCase(SecurityMonkeyApiTestCase):
                           account_type_id=account_type_result.id)
 
         technology = Technology(name="iamrole")
-        item = Item(region="us-west-2", name="testrole",
-                    arn=ARN_PREFIX + ":iam::012345678910:role/testrole", technology=technology,
-                    account=account)
+        item = Item(
+            region="us-west-2",
+            name="testrole",
+            arn=f"{ARN_PREFIX}:iam::012345678910:role/testrole",
+            technology=technology,
+            account=account,
+        )
+
 
         self.now = datetime(2016, 11, 3)
         self.yesterday = self.now - timedelta(days=1)

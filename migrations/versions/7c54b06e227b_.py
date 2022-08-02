@@ -233,13 +233,11 @@ def upgrade():
         index = "{region}-{name}-{tech_id}-{account_id}".format(region=r[1], name=r[2], tech_id=r[3], account_id=r[4])
         if not items_reference.get(index):
             items_reference[index] = r
+        elif items_reference[index][5] > r[5]:
+            items_to_delete.append(r)
         else:
-            # Compare the latest revision id -- we only want to keep the larger (newest) one.
-            if items_reference[index][5] > r[5]:
-                items_to_delete.append(r)
-            else:
-                items_to_delete.append(items_reference[index])
-                items_reference[index] = r
+            items_to_delete.append(items_reference[index])
+            items_reference[index] = r
 
     if not items_to_delete:
         print("[@] No duplicate items found!")
@@ -250,7 +248,7 @@ def upgrade():
             db_item = session.query(Item).filter(Item.id == duplicate[0]).scalar()
             session.delete(db_item)
             # session.execute(delete(Item, Item.id == duplicate[0]))
-            print("[-] Marked duplicate item for deletion: {}".format(duplicate[2]))
+            print(f"[-] Marked duplicate item for deletion: {duplicate[2]}")
 
         print("[-->] Deleting...")
         session.commit()

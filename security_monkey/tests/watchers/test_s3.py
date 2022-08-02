@@ -38,9 +38,14 @@ class S3TestCase(SecurityMonkeyTestCase):
                                active=True, third_party=False,
                                account_type_id=account_type_result.id)
         self.technology = Technology(name="s3")
-        self.item = Item(region="us-west-2", name="somebucket",
-                         arn=ARN_PREFIX + ":s3:::somebucket", technology=self.technology,
-                         account=self.account)
+        self.item = Item(
+            region="us-west-2",
+            name="somebucket",
+            arn=f"{ARN_PREFIX}:s3:::somebucket",
+            technology=self.technology,
+            account=self.account,
+        )
+
 
         db.session.add(self.account)
         db.session.add(self.technology)

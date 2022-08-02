@@ -46,7 +46,7 @@ class CloudAuxWatcher(Watcher):
         return regions
 
     def _add_exception_fields_to_kwargs(self, **kwargs):
-        exception_map = dict()
+        exception_map = {}
         kwargs['index'] = self.index
         kwargs['account_name'] = self._get_account_name(kwargs['conn_dict']['account_number'])
         kwargs['exception_record_region'] = self.override_region or kwargs['conn_dict']['region']
@@ -62,11 +62,11 @@ class CloudAuxWatcher(Watcher):
         Each tuple contains two members.  1) The result. 2) The exception map.
         This method combines that list of tuples into a single result list and a single exception map.
         """
-        items = list()
-        exception_map = dict()
+        items = []
+        exception_map = {}
         for result in response:
             items.extend(result[0])
-            exception_map.update(result[1])
+            exception_map |= result[1]
         return items, exception_map
 
     def slurp(self):
@@ -130,8 +130,9 @@ class CloudAuxChangeItem(ChangeItem):
             account=account,
             name=name,
             arn=arn,
-            new_config=config if config else {},
-            source_watcher=source_watcher)
+            new_config=config or {},
+            source_watcher=source_watcher,
+        )
 
     @classmethod
     def from_item(cls, name, item, record_region, source_watcher=None, **kwargs):

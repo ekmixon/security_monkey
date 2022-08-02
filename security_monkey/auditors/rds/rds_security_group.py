@@ -39,10 +39,10 @@ class RDSSecurityGroupAuditor(Auditor):
         self.network_whitelist = NetworkWhitelistEntry.query.all()
 
     def _check_inclusion_in_network_whitelist(self, cidr):
-        for entry in self.network_whitelist:
-            if ipaddr.IPNetwork(cidr) in ipaddr.IPNetwork(str(entry.cidr)):
-                return True
-        return False
+        return any(
+            ipaddr.IPNetwork(cidr) in ipaddr.IPNetwork(str(entry.cidr))
+            for entry in self.network_whitelist
+        )
 
     def check_rds_ec2_rfc1918(self, sg_item):
         """
@@ -67,11 +67,16 @@ class RDSSecurityGroupAuditor(Auditor):
         severity = 3
         for ipr in sg_item.config.get("ip_ranges", []):
             cidr = ipr.get("cidr_ip", None)
-            if cidr and not self._check_inclusion_in_network_whitelist(cidr):
-                if '/' in cidr and not cidr == "0.0.0.0/0" and not cidr == "10.0.0.0/8":
-                    mask = int(cidr.split('/')[1])
-                    if mask < 24 and mask > 0:
-                        self.add_issue(severity, tag, sg_item, notes=cidr)
+            if (
+                cidr
+                and not self._check_inclusion_in_network_whitelist(cidr)
+                and '/' in cidr
+                and cidr != "0.0.0.0/0"
+                and cidr != "10.0.0.0/8"
+            ):
+                mask = int(cidr.split('/')[1])
+                if mask < 24 and mask > 0:
+                    self.add_issue(severity, tag, sg_item, notes=cidr)
 
     def check_securitygroup_zero_subnet(self, sg_item):
         """
@@ -81,7 +86,12 @@ class RDSSecurityGroupAuditor(Auditor):
         severity = 10
         for ipr in sg_item.config.get("ip_ranges", []):
             cidr = ipr.get("cidr_ip", None)
-            if cidr and '/' in cidr and not cidr == "0.0.0.0/0" and not cidr == "10.0.0.0/8":
+            if (
+                cidr
+                and '/' in cidr
+                and cidr != "0.0.0.0/0"
+                and cidr != "10.0.0.0/8"
+            ):
                 mask = int(cidr.split('/')[1])
                 if mask == 0:
                     self.add_issue(severity, tag, sg_item, notes=cidr)
@@ -94,7 +104,7 @@ class RDSSecurityGroupAuditor(Auditor):
         severity = 5
         for ipr in sg_item.config.get("ip_ranges", []):
             cidr = ipr.get("cidr_ip")
-            if "0.0.0.0/0" == cidr:
+            if cidr == "0.0.0.0/0":
                 self.add_issue(severity, tag, sg_item, notes=cidr)
                 return
 
@@ -107,6 +117,6 @@ class RDSSecurityGroupAuditor(Auditor):
 
         for ipr in sg_item.config.get("ip_ranges", []):
             cidr = ipr.get("cidr_ip")
-            if "10.0.0.0/8" == cidr:
+            if cidr == "10.0.0.0/8":
                 self.add_issue(severity, tag, sg_item, notes=cidr)
                 return

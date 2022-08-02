@@ -32,7 +32,10 @@ def upgrade():
     session = Session(bind=bind)
 
     # update itemaudit set fixed = False where fixed is NULL
-    session.query(ItemAudit).filter(ItemAudit.fixed==None).update(dict(fixed=False))
+    session.query(ItemAudit).filter(ItemAudit.fixed is None).update(
+        dict(fixed=False)
+    )
+
     session.commit()
 
     # Make column not nullable:

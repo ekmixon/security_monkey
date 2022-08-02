@@ -44,11 +44,10 @@ class IAMPolicyAuditor(Auditor):
 
         for policy in self.load_iam_policies(item):
             for statement in policy.statements:
-                if statement.effect == "Allow":
-                    if '*' in statement.actions:
-                        resources = json.dumps(sorted(list(statement.resources)))
-                        notes = notes.format(actions='["*"]', resource=resources)
-                        self.add_issue(10, issue, item, notes=notes)
+                if statement.effect == "Allow" and '*' in statement.actions:
+                    resources = json.dumps(sorted(list(statement.resources)))
+                    notes = notes.format(actions='["*"]', resource=resources)
+                    self.add_issue(10, issue, item, notes=notes)
 
     def check_iam_star_privileges(self, item):
         """
@@ -136,11 +135,13 @@ class IAMPolicyAuditor(Auditor):
                 if '*' in statement.actions:
                     continue
 
-                if statement.effect == 'Allow':
-                    if 'iam:passrole' in statement.actions_expanded:
-                        resources = json.dumps(sorted(list(statement.resources)))
-                        notes = notes.format(actions='["iam:passrole"]', resource=resources)
-                        self.add_issue(10, issue, item, notes=notes)
+                if (
+                    statement.effect == 'Allow'
+                    and 'iam:passrole' in statement.actions_expanded
+                ):
+                    resources = json.dumps(sorted(list(statement.resources)))
+                    notes = notes.format(actions='["iam:passrole"]', resource=resources)
+                    self.add_issue(10, issue, item, notes=notes)
 
     def check_notaction(self, item):
         """
@@ -153,10 +154,12 @@ class IAMPolicyAuditor(Auditor):
 
         for policy in self.load_iam_policies(item):
             for statement in policy.statements:
-                if statement.effect == 'Allow':
-                    if 'NotAction' in statement.statement:
-                        notes = notes.format(construct='["NotAction"]')
-                        self.add_issue(10, issue, item, notes=notes)
+                if (
+                    statement.effect == 'Allow'
+                    and 'NotAction' in statement.statement
+                ):
+                    notes = notes.format(construct='["NotAction"]')
+                    self.add_issue(10, issue, item, notes=notes)
 
     def check_notresource(self, item):
         """
@@ -169,10 +172,12 @@ class IAMPolicyAuditor(Auditor):
 
         for policy in self.load_iam_policies(item):
             for statement in policy.statements:
-                if statement.effect == 'Allow':
-                    if 'NotResource' in statement.statement:
-                        notes = notes.format(construct='["NotResource"]')
-                        self.add_issue(10, issue, item, notes=notes)
+                if (
+                    statement.effect == 'Allow'
+                    and 'NotResource' in statement.statement
+                ):
+                    notes = notes.format(construct='["NotResource"]')
+                    self.add_issue(10, issue, item, notes=notes)
 
     def check_security_group_permissions(self, item):
         """
@@ -216,4 +221,6 @@ class IAMPolicyAuditor(Auditor):
                             #break
 
             if not found:
-                app.logger.error("IAM Managed Policy defined but not found for {}-{}".format(iam_item.index, iam_item.name))
+                app.logger.error(
+                    f"IAM Managed Policy defined but not found for {iam_item.index}-{iam_item.name}"
+                )

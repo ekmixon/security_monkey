@@ -38,19 +38,17 @@ class JiraSync(object):
                 self.assignee = data.get('assignee', None)
                 self.only_update_on_change = data.get('only_update_on_change', False)
         except KeyError as e:
-            raise Exception('JIRA sync configuration missing required field: {}'.format(e))
+            raise Exception(f'JIRA sync configuration missing required field: {e}')
         except IOError as e:
-            raise Exception('Error opening JIRA sync configuration file: {}'.format(e))
+            raise Exception(f'Error opening JIRA sync configuration file: {e}')
         except yaml.scanner.ScannerError as e:
-            raise Exception('JIRA sync configuration file contains malformed YAML: {}'.format(e))
+            raise Exception(f'JIRA sync configuration file contains malformed YAML: {e}')
 
         try:
-            options = {}
-            options['verify'] = app.config.get('JIRA_SSL_VERIFY', True)
-
+            options = {'verify': app.config.get('JIRA_SSL_VERIFY', True)}
             proxies = None
             if (self.ip_proxy and self.port_proxy):
-                proxy_connect = '{}:{}'.format(self.ip_proxy, self.port_proxy)
+                proxy_connect = f'{self.ip_proxy}:{self.port_proxy}'
                 proxies = {'http': proxy_connect, 'https': proxy_connect}
             elif (self.ip_proxy and self.port_proxy is None):
                 app.logger.warn("Proxy host set, but not proxy port.  Skipping JIRA proxy settings.")
@@ -60,19 +58,23 @@ class JiraSync(object):
             self.client = JIRA(self.server, basic_auth=(self.account, self.password), options=options, proxies=proxies)  # pylint: disable=E1123
 
         except Exception as e:
-            raise Exception("Error connecting to JIRA: {}".format(str(e)[:1024]))
+            raise Exception(f"Error connecting to JIRA: {str(e)[:1024]}")
 
     def close_issue(self, issue):
         try:
             self.transition_issue(issue, app.config.get('JIRA_CLOSED', 'Closed'))
         except Exception as e:
-            app.logger.error('Error closing issue {} ({}): {}'.format(issue.fields.summary, issue.key, e))
+            app.logger.error(
+                f'Error closing issue {issue.fields.summary} ({issue.key}): {e}'
+            )
 
     def open_issue(self, issue):
         try:
             self.transition_issue(issue, app.config.get('JIRA_OPEN', 'Open'))
         except Exception as e:
-            app.logger.error('Error opening issue {} ({}): {}'.format(issue.fields.summary, issue.key, e))
+            app.logger.error(
+                f'Error opening issue {issue.fields.summary} ({issue.key}): {e}'
+            )
 
     def transition_issue(self, issue, transition_name):
         transitions = self.client.transitions(issue)
@@ -80,7 +82,7 @@ class JiraSync(object):
             if transition['name'].lower() == transition_name.lower():
                 break
         else:
-            app.logger.error('No transition {} for issue {}'.format(transition_name, issue.key))
+            app.logger.error(f'No transition {transition_name} for issue {issue.key}')
             return
         self.client.transition_issue(issue, transition['id'])
 
@@ -107,27 +109,30 @@ class JiraSync(object):
                 old_desc = issue.fields.description
                 old_desc = old_desc[:old_desc.find('This ticket was automatically created by Security Monkey')]
                 if self.only_update_on_change and issue.fields.description:
-                    old_count = re.search("Number of issues: (\d*)\\n", issue.fields.description).group(1)
+                    old_count = re.search(
+                        "Number of issues: (\d*)\\n", issue.fields.description
+                    )[1]
+
                     if int(old_count) != count:
                         # The count has changed so it still needs to be updated
                         issue.update(description=old_desc + description)
-                        app.logger.debug("Updated issue {} ({})".format(summary, issue.key))
+                        app.logger.debug(f"Updated issue {summary} ({issue.key})")
                     else:
                         # The count hasn't changed so it will not be updated
                         app.logger.debug('Not updating issue, configured to only update if the count has changed.')
                 else:
                     issue.update(description=old_desc + description)
-                    app.logger.debug("Updated issue {} ({})".format(summary, issue.key))
+                    app.logger.debug(f"Updated issue {summary} ({issue.key})")
 
                 if self.disable_transitions:
                     return
 
                 if issue.fields.status.name == app.config.get('JIRA_CLOSED', 'Closed') and count:
                     self.open_issue(issue)
-                    app.logger.debug("Reopened issue {} ({})".format(summary, issue.key))
+                    app.logger.debug(f"Reopened issue {summary} ({issue.key})")
                 elif issue.fields.status.name != app.config.get('JIRA_CLOSED', 'Closed') and count == 0:
                     self.close_issue(issue)
-                    app.logger.debug("Closed issue {} ({})".format(summary, issue.key))
+                    app.logger.debug(f"Closed issue {summary} ({issue.key})")
                 return
 
         # Don't open a ticket with no issues
@@ -144,9 +149,9 @@ class JiraSync(object):
 
         try:
             issue = self.client.create_issue(**jira_args)
-            app.logger.debug("Created issue {} ({})".format(summary, issue.key))
+            app.logger.debug(f"Created issue {summary} ({issue.key})")
         except Exception as e:
-            app.logger.error("Error creating issue {}: {}".format(summary, e))
+            app.logger.error(f"Error creating issue {summary}: {e}")
 
     def sync_issues(self, accounts=None, tech_name=None):
         """ Runs add_or_update_issue for every AuditorSetting, filtered by technology

@@ -65,10 +65,7 @@ def is_active(config):
     if list(config.keys()) == ['Arn']:
         return False
 
-    if set(config.keys()) == {'account_number', 'technology', 'region', 'name'}:
-        return False
-
-    return True
+    return set(config.keys()) != {'account_number', 'technology', 'region', 'name'}
 
 
 def create_revision(config, db_item):

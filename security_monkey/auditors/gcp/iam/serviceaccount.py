@@ -53,8 +53,8 @@ class IAMServiceAccountAuditor(Auditor):
         if key_count > self.gcp_config.MAX_SERVICEACCOUNT_KEYS:
             ae = make_audit_issue(
                 error_cat, 'MAX', 'KEYS')
-            ae.notes = 'Too Many Keys (count: %s, max: %s)' % (
-                key_count, self.gcp_config.MAX_SERVICEACCOUNT_KEYS)
+            ae.notes = f'Too Many Keys (count: {key_count}, max: {self.gcp_config.MAX_SERVICEACCOUNT_KEYS})'
+
             errors.append(ae)
         return errors
 
@@ -84,14 +84,11 @@ class IAMServiceAccountAuditor(Auditor):
         err = self._max_keys(item.config.get('keys'))
         errors.extend(err) if err else None
 
-        policies = item.config.get('policy')
-        if policies:
+        if policies := item.config.get('policy'):
             err = self._actor_role(policies)
             errors.extend(err) if err else None
 
-        if errors:
-            return (False, errors)
-        return (True, None)
+        return (False, errors) if errors else (True, None)
 
     def check_serviceaccount(self, item):
         (ok, errors) = self.inspect_serviceaccount(item)

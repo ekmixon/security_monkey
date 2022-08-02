@@ -58,8 +58,10 @@ class VPCAuditor(Auditor):
             for log in vpc_item.config["FlowLogs"]:
                 if not self.account_mapping[vpc_item.account].get(log):
                     # This may not have been seen yet, so skip.
-                    app.logger.debug("[/] Can't find flow log entry with ID: {}. It may not have been seen yet, "
-                                     "so skipping...".format(log))
+                    app.logger.debug(
+                        f"[/] Can't find flow log entry with ID: {log}. It may not have been seen yet, so skipping..."
+                    )
+
                     continue
 
                 if self.account_mapping[vpc_item.account][log] != "ACTIVE":

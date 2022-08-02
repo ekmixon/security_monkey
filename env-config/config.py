@@ -66,7 +66,7 @@ WEB_PORT = '443'
 WEB_PATH = '/static/ui.html'
 FRONTED_BY_NGINX = True
 NGINX_PORT = '443'
-BASE_URL = 'https://{}/'.format(FQDN)
+BASE_URL = f'https://{FQDN}/'
 
 SECRET_KEY = '<INSERT_RANDOM_STRING_HERE>'
 

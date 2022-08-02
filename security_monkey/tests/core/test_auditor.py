@@ -78,7 +78,9 @@ class AuditorTestCase(SecurityMonkeyTestCase):
         try:
             auditor.save_issues()
         except AttributeError as e:
-            self.fail("Auditor.save_issues() raised AttributeError unexpectedly: {}".format(e.message))
+            self.fail(
+                f"Auditor.save_issues() raised AttributeError unexpectedly: {e.message}"
+            )
 
     def test_link_to_support_item_issue(self):
         sub_item_id = 2

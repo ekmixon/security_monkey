@@ -86,8 +86,7 @@ class IAMSSLAuditor(Auditor):
         """
         alert when a cert's expiration is within 30 days
         """
-        expiration = cert_item.config.get('expiration', None)
-        if expiration:
+        if expiration := cert_item.config.get('expiration', None):
             expiration = parser.parse(expiration)
             now = expiration.now(tzutc())
             time_to_expiration = (expiration - now).days
@@ -99,8 +98,7 @@ class IAMSSLAuditor(Auditor):
         """
         alert when a cert's expiration is within 60 days
         """
-        expiration = cert_item.config.get('expiration', None)
-        if expiration:
+        if expiration := cert_item.config.get('expiration', None):
             expiration = parser.parse(expiration)
             now = expiration.now(tzutc())
             time_to_expiration = (expiration - now).days
@@ -112,8 +110,7 @@ class IAMSSLAuditor(Auditor):
         """
         alert when a cert's expiration is within 30 days
         """
-        expiration = cert_item.config.get('expiration', None)
-        if expiration:
+        if expiration := cert_item.config.get('expiration', None):
             expiration = parser.parse(expiration)
             now = expiration.now(tzutc())
             time_to_expiration = (expiration - now).days
@@ -125,8 +122,7 @@ class IAMSSLAuditor(Auditor):
         """
         alert when a cert was uploaded pre-heartbleed.
         """
-        upload = cert_item.config.get('upload_date', None)
-        if upload:
+        if upload := cert_item.config.get('upload_date', None):
             upload = parser.parse(upload)
             heartbleed = parser.parse(HEARTBLEED_DATE)
             if upload < heartbleed:

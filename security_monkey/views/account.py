@@ -345,15 +345,18 @@ class AccountPostList(AuthenticatedService):
 
         if order_by and hasattr(Account, order_by):
             if order_dir.lower() == 'asc':
-                if order_by == 'account_type':
-                    query = query.join(Account.account_type).order_by(getattr(AccountType, 'name').asc())
-                else:
-                    query = query.order_by(getattr(Account, order_by).asc())
+                query = (
+                    query.join(Account.account_type).order_by(
+                        getattr(AccountType, 'name').asc()
+                    )
+                    if order_by == 'account_type'
+                    else query.order_by(getattr(Account, order_by).asc())
+                )
+
+            elif order_by == 'account_type':
+                query = query.join(Account.account_type).order_by(getattr(AccountType, 'name').desc())
             else:
-                if order_by == 'account_type':
-                    query = query.join(Account.account_type).order_by(getattr(AccountType, 'name').desc())
-                else:
-                    query = query.order_by(getattr(Account, order_by).desc())
+                query = query.order_by(getattr(Account, order_by).desc())
         else:
             query = query.order_by(Account.id)
 

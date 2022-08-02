@@ -43,10 +43,7 @@ def crossdomain(allowed_origins=None, methods=None, headers=None,
         origin = request.headers.get("Origin", None)
         if origin and current_app.config.get('DEBUG', False):
             return origin
-        if origin and origin in allowed_origins:
-            return origin
-
-        return None
+        return origin if origin and origin in allowed_origins else None
 
     def get_methods():
         if methods is not None:
@@ -75,6 +72,7 @@ def crossdomain(allowed_origins=None, methods=None, headers=None,
 
         f.provide_automatic_options = False
         return update_wrapper(wrapped_function, f)
+
     return decorator
 
 
@@ -172,7 +170,7 @@ def get_regions(account, service_name):
     if account.getCustom("external_id") and account.getCustom("external_id") != '':
         external_id = account.getCustom("external_id")
 
-    arn = ARN_PREFIX + ':iam::' + account.identifier + ':role/' + role_name
+    arn = f'{ARN_PREFIX}:iam::{account.identifier}:role/{role_name}'
     assume_role_kwargs = {
         'RoleArn': arn,
         'RoleSessionName': 'secmonkey'

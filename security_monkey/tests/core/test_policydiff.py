@@ -131,8 +131,8 @@ def test_produce():
     differ._new_policy = [1, 2, 3]
     differ.produceDiffHTML()
 
-    differ._old_policy = set([1, 2, 3])
-    differ._new_policy = set([1, 2, 3])
+    differ._old_policy = {1, 2, 3}
+    differ._new_policy = {1, 2, 3}
 
     try:
         differ.produceDiffHTML()
@@ -245,9 +245,13 @@ def test_print_item():
         (True, "true"),
         (False, "false"),
         ({"1": "2"}, "<font color='black'>\"1\": \"2\"</font><br/>\n"),
-        (["1", "2"], "<font color='black'>\"1\",</font><br/>\n<font color='black'>\"2\"</font><br/>\n"),
-        (set([1, 2, 3]), "")  # unexpected
+        (
+            ["1", "2"],
+            "<font color='black'>\"1\",</font><br/>\n<font color='black'>\"2\"</font><br/>\n",
+        ),
+        ({1, 2, 3}, ""),
     ]
+
 
     for value in values:
         assert print_item(value[0], 'same', 0) == value[1]
@@ -264,8 +268,9 @@ def test_print_list():
         True,
         False,
         None,
-        set(["not supported type"])
+        {"not supported type"},
     ]
+
 
     expected = """<font color='{color}'>"string",</font><br/>
 <font color='{color}'>[[<br/>
@@ -299,12 +304,11 @@ def test_print_dict():
         "a": "<script>",
         "b": True,
         "c": None,
-        "d": {
-            "da": 1
-        },
+        "d": {"da": 1},
         "e": [1, 2, 3],
-        "f": set([1, 2, 3])
+        "f": {1, 2, 3},
     }
+
 
     expected = """<font color='{color}'>"a": "&lt;script&gt;",</font><br/>
 <font color='{color}'>"b": true,</font><br/>
@@ -332,26 +336,26 @@ def test_sub_dict():
         dict(
             a="hello",
             b="hello",
-            x="""<font color='black'>"somekey": "hello",</font><br/>\n"""
+            x="""<font color='black'>"somekey": "hello",</font><br/>\n""",
         ),
         dict(
             a="hello",
             b="different",
             x="""<font color='red'>"somekey": "different",</font><br/>
 <font color='green'>"somekey": "hello",</font><br/>
-"""
+""",
         ),
         dict(
             a=123,
             b=123,
-            x="""<font color='black'>"somekey": 123,</font><br/>\n"""
+            x="""<font color='black'>"somekey": 123,</font><br/>\n""",
         ),
         dict(
             a=123,
             b=1234,
             x="""<font color='red'>"somekey": 1234,</font><br/>
 <font color='green'>"somekey": 123,</font><br/>
-"""
+""",
         ),
         dict(
             a={"a": 123},
@@ -359,7 +363,7 @@ def test_sub_dict():
             x="""<font color='black'>"somekey": {<br/>
 <font color='black'>&nbsp;&nbsp;&nbsp;&nbsp;"a": 123</font><br/>
 },</font><br/>
-"""
+""",
         ),
         dict(
             a={"a": 123},
@@ -368,7 +372,7 @@ def test_sub_dict():
 <font color='red'>&nbsp;&nbsp;&nbsp;&nbsp;"a": 1234,</font><br/>
 <font color='green'>&nbsp;&nbsp;&nbsp;&nbsp;"a": 123</font><br/>
 },</font><br/>
-"""
+""",
         ),
         dict(
             a=[1, 2, 3, 4],
@@ -379,9 +383,8 @@ def test_sub_dict():
 <font color='black'>&nbsp;&nbsp;&nbsp;&nbsp;3,</font><br/>
 <font color='black'>&nbsp;&nbsp;&nbsp;&nbsp;4</font><br/>
 ],</font><br/>
-"""
+""",
         ),
-        # doesnt' seem to be built to handle this case?
         dict(
             a=[1, 2, 3, 4],
             b=[1, 2, 3, 4, 5],
@@ -392,14 +395,11 @@ def test_sub_dict():
 <font color='black'>&nbsp;&nbsp;&nbsp;&nbsp;4,</font><br/>
 <font color='red'>&nbsp;&nbsp;&nbsp;&nbsp;5</font><br/>
 ],</font><br/>
-"""
+""",
         ),
-        dict(
-            a=set([1, 2, 3]),
-            b=set([1, 2, 3]),
-            x=''
-        )
+        dict(a={1, 2, 3}, b={1, 2, 3}, x=''),
     ]
+
 
     for value in values:
         result = process_sub_dict("somekey", value["a"], value["b"], 0)
@@ -445,8 +445,30 @@ def test_diff_list():
 
     values = [
         dict(
-            a=["1", "2", 3, 3.0, True, False, None, dict(a="123"), ["list"], set([1,2,3])],
-            b=["1", "2", 3, 3.0, True, False, None, dict(a="123"), ["list"], set([1,2,3])],
+            a=[
+                "1",
+                "2",
+                3,
+                3.0,
+                True,
+                False,
+                None,
+                dict(a="123"),
+                ["list"],
+                {1, 2, 3},
+            ],
+            b=[
+                "1",
+                "2",
+                3,
+                3.0,
+                True,
+                False,
+                None,
+                dict(a="123"),
+                ["list"],
+                {1, 2, 3},
+            ],
             x="""<font color='black'>"1",</font><br/>
 <font color='black'>"2",</font><br/>
 <font color='black'>3,</font><br/>
@@ -460,7 +482,7 @@ def test_diff_list():
 <font color='black'>[<br/>
 <font color='black'>&nbsp;&nbsp;&nbsp;&nbsp;"list"</font><br/>
 ]</font><br/>
-"""
+""",
         ),
         dict(
             a=[1, 2, 3],
@@ -469,10 +491,10 @@ def test_diff_list():
 <font color='black'>3,</font><br/>
 <font color='red'>4,</font><br/>
 <font color='green'>2</font><br/>
-"""
+""",
         ),
         dict(
-            a=["str", True, [1, 3], set([1, 2])],
+            a=["str", True, [1, 3], {1, 2}],
             b=[],
             x="""<font color='green'>"str",</font><br/>
 <font color='green'>true,</font><br/>
@@ -480,14 +502,14 @@ def test_diff_list():
 <font color='green'>&nbsp;&nbsp;&nbsp;&nbsp;1,</font><br/>
 <font color='green'>&nbsp;&nbsp;&nbsp;&nbsp;3</font><br/>
 ]</font><br/>
-"""
+""",
         ),
         dict(
             a=[True],
             b=[False],
             x="""<font color='red'>false,</font><br/>
 <font color='green'>true</font><br/>
-"""
+""",
         ),
         dict(
             a=[[1, 2, 3, 4, 5]],
@@ -499,7 +521,7 @@ def test_diff_list():
 <font color='black'>&nbsp;&nbsp;&nbsp;&nbsp;4,</font><br/>
 <font color='green'>&nbsp;&nbsp;&nbsp;&nbsp;5</font><br/>
 ]</font><br/>
-"""
+""",
         ),
         dict(
             a=[{"a": 123, "b": 234}],
@@ -509,16 +531,22 @@ def test_diff_list():
 <font color='red'>&nbsp;&nbsp;&nbsp;&nbsp;"b": 2345,</font><br/>
 <font color='green'>&nbsp;&nbsp;&nbsp;&nbsp;"b": 234</font><br/>
 }</font><br/>
-"""
+""",
         ),
-        dict(
-            a=[set([1, 2, 3, 4])],
-            b=[set([1, 2, 3, 4, 5])],
-            x=""
-        ),
+        dict(a=[{1, 2, 3, 4}], b=[{1, 2, 3, 4, 5}], x=""),
         dict(
             a=[],
-            b=["<script>", "<script>", 1234, 1234.0, True, None, [1, 2, 3], {"a": 1}, set([1])],
+            b=[
+                "<script>",
+                "<script>",
+                1234,
+                1234.0,
+                True,
+                None,
+                [1, 2, 3],
+                {"a": 1},
+                {1},
+            ],
             x="""<font color='red'>"&lt;script&gt;",</font><br/>
 <font color='red'>"&lt;script&gt;",</font><br/>
 <font color='red'>1234,</font><br/>
@@ -533,9 +561,10 @@ def test_diff_list():
 <font color='red'>{<br/>
 <font color='red'>&nbsp;&nbsp;&nbsp;&nbsp;"a": 1</font><br/>
 }</font><br/>
-"""
+""",
         ),
     ]
+
 
     for value in values:
         result = diff_list(value["a"], value["b"], 0)

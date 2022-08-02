@@ -161,7 +161,7 @@ class SecurityGroupAuditor(Auditor):
         score = severity * multiplier
 
         for rule in item.config.get("rules", []):
-            if not rule.get("rule_type") == direction:
+            if rule.get("rule_type") != direction:
                 continue
 
             cidr = rule.get("cidr_ip")

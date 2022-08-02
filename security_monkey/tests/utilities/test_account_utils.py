@@ -35,7 +35,10 @@ class AccountTestUtils(SecurityMonkeyTestCase):
         from security_monkey.account_manager import account_registry
 
         for name, account_manager in list(account_registry.items()):
-            manager.add_command("add_account_%s" % name.lower(), AddAccount(account_manager()))
+            manager.add_command(
+                f"add_account_{name.lower()}", AddAccount(account_manager())
+            )
+
 
         manager.handle("manage.py", ["add_account_aws", "-n", "test", "--active", "--id", "99999999999",
                                      "--canonical_id", "bcaf1ffd86f41161ca5fb16fd081034f",
@@ -63,7 +66,10 @@ class AccountTestUtils(SecurityMonkeyTestCase):
         from security_monkey.account_manager import account_registry
 
         for name, account_manager in list(account_registry.items()):
-            manager.add_command("add_account_%s" % name.lower(), AddAccount(account_manager()))
+            manager.add_command(
+                f"add_account_{name.lower()}", AddAccount(account_manager())
+            )
+
 
         # Create the account:
         from security_monkey.account_manager import account_registry
@@ -128,7 +134,7 @@ class AccountTestUtils(SecurityMonkeyTestCase):
         bulk_enable_accounts(['BAD_ACCOUNT'])
         accounts = Account.query.all()
         for account in accounts:
-            if account.name == 'TEST_ACCOUNT1' or account.name == 'TEST_ACCOUNT2':
+            if account.name in ['TEST_ACCOUNT1', 'TEST_ACCOUNT2']:
                 self.assertTrue(account.active)
             else:
                 self.assertFalse(account.active)
@@ -137,7 +143,7 @@ class AccountTestUtils(SecurityMonkeyTestCase):
         bulk_disable_accounts(['BAD_ACCOUNT'])
         accounts = Account.query.all()
         for account in accounts:
-            if account.name == 'TEST_ACCOUNT1' or account.name == 'TEST_ACCOUNT2':
+            if account.name in ['TEST_ACCOUNT1', 'TEST_ACCOUNT2']:
                 self.assertTrue(account.active)
             else:
                 self.assertFalse(account.active)

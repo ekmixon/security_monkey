@@ -21,8 +21,10 @@ with open('requirements.txt') as f:
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 with open('security_monkey/__init__.py', 'rb') as f:
-    SECURITY_MONKEY_VERSION = str(ast.literal_eval(_version_re.search(
-        f.read().decode('utf-8')).group(1)))
+    SECURITY_MONKEY_VERSION = str(
+        ast.literal_eval(_version_re.search(f.read().decode('utf-8'))[1])
+    )
+
 
 setup(
     name='security_monkey',

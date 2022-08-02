@@ -44,17 +44,17 @@ class Route53Service(object):
     def register(self, fqdn, exclusive=False, ttl=60, type='CNAME', regions=None):
         fqdn = fqdn.replace('_', '-')
         fqdn = re.sub(r'[^\w\-\.]', '', fqdn)
-        app.logger.debug('route53: register fqdn: {}, hostname: {}'.format(fqdn, self.hostname))
+        app.logger.debug(f'route53: register fqdn: {fqdn}, hostname: {self.hostname}')
 
         zone_id = self._get_zone_id(fqdn)
 
         if exclusive:
-            app.logger.debug('route53: making fqdn: {} exclusive'.format(fqdn))
+            app.logger.debug(f'route53: making fqdn: {fqdn} exclusive')
 
             rrsets = self.conn.get_all_rrsets(zone_id, type, name=fqdn)
             for rrset in rrsets:
-                if rrset.name == fqdn + '.':
-                    app.logger.debug('found fqdn to delete: {}'.format(rrset))
+                if rrset.name == f'{fqdn}.':
+                    app.logger.debug(f'found fqdn to delete: {rrset}')
 
                     for rr in rrset.resource_records:
                         changes = boto.route53.record.ResourceRecordSets(self.conn, zone_id)
@@ -70,7 +70,10 @@ class Route53Service(object):
         fqdn = fqdn.replace('_', '-')
         fqdn = re.sub(r'[^\w\-\.]', '', fqdn)
 
-        app.logger.debug('route53: unregister fqdn: {}, hostname: {}'.format(fqdn, self.hostname))
+        app.logger.debug(
+            f'route53: unregister fqdn: {fqdn}, hostname: {self.hostname}'
+        )
+
 
         zone_id = self._get_zone_id(fqdn)
 
@@ -88,9 +91,8 @@ class Route53Service(object):
 
         while domain != '.':
             for zone in hosted_zones:
-                app.logger.debug("{} {}".format(zone['Name'], domain))
+                app.logger.debug(f"{zone['Name']} {domain}")
                 if zone['Name'] == domain:
                     return zone['Id'].replace('/hostedzone/', '')
-            else:
-                domain = domain[domain.find('.') + 1:]
+            domain = domain[domain.find('.') + 1:]
         raise ZoneIDNotFound(domain)

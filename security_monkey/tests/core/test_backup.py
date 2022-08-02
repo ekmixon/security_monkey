@@ -72,12 +72,18 @@ class BackupTestCase(SecurityMonkeyTestCase):
 
         self.assertTrue('TEST_ACCOUNT' in list(mock_file_system.keys()),
                         msg="Did not backup TEST_ACCOUNT")
-        self.assertEqual(first=1, second=len(list(mock_file_system.keys())),
-                         msg="Should backup account once but backed up {} times"
-                         .format(len(list(mock_file_system.keys()))))
-        self.assertEqual(first=3, second=len(mock_file_system['TEST_ACCOUNT']),
-                         msg="Should backup 3 technologies but backed up {}"
-                         .format(len(mock_file_system['TEST_ACCOUNT'])))
+        self.assertEqual(
+            first=1,
+            second=len(list(mock_file_system.keys())),
+            msg=f"Should backup account once but backed up {len(list(mock_file_system.keys()))} times",
+        )
+
+        self.assertEqual(
+            first=3,
+            second=len(mock_file_system['TEST_ACCOUNT']),
+            msg=f"Should backup 3 technologies but backed up {len(mock_file_system['TEST_ACCOUNT'])}",
+        )
+
         self.assertTrue('index1' in mock_file_system['TEST_ACCOUNT'],
                         msg="Did not backup index1")
         self.assertTrue('index2' in mock_file_system['TEST_ACCOUNT'],
@@ -92,11 +98,17 @@ class BackupTestCase(SecurityMonkeyTestCase):
 
         self.assertTrue('TEST_ACCOUNT' in list(mock_file_system.keys()),
                         msg="Did not backup TEST_ACCOUNT")
-        self.assertEqual(first=1, second=len(list(mock_file_system.keys())),
-                         msg="Should backup account once but backed up {} times"
-                         .format(len(list(mock_file_system.keys()))))
-        self.assertEqual(first=1, second=len(mock_file_system['TEST_ACCOUNT']),
-                         msg="Should backup 1 technologies but backed up {}"
-                         .format(len(mock_file_system['TEST_ACCOUNT'])))
+        self.assertEqual(
+            first=1,
+            second=len(list(mock_file_system.keys())),
+            msg=f"Should backup account once but backed up {len(list(mock_file_system.keys()))} times",
+        )
+
+        self.assertEqual(
+            first=1,
+            second=len(mock_file_system['TEST_ACCOUNT']),
+            msg=f"Should backup 1 technologies but backed up {len(mock_file_system['TEST_ACCOUNT'])}",
+        )
+
         self.assertTrue('index1' in mock_file_system['TEST_ACCOUNT'],
                         msg="Did not backup index1")

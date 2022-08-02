@@ -27,10 +27,12 @@ alerter_registry = []
 
 class AlerterType(type):
 
-    def __init__(cls, name, bases, attrs):
-        if getattr(cls, "report_auditor_changes", None) and getattr(cls, "report_watcher_changes", None):
-            app.logger.debug("Registering alerter %s", cls.__name__)
-            alerter_registry.append(cls)
+    def __init__(self, name, bases, attrs):
+        if getattr(self, "report_auditor_changes", None) and getattr(
+            self, "report_watcher_changes", None
+        ):
+            app.logger.debug("Registering alerter %s", self.__name__)
+            alerter_registry.append(self)
 
 
 def report_auditor_changes(auditor):

@@ -51,7 +51,7 @@ class AccessControlList(object):
 
         :param view_func: The view function exempt from checking.
         """
-        if not view_func in self._exempt:
+        if view_func not in self._exempt:
             self._exempt.append(view_func)
 
     def is_allowed(self, role, method, resource):
@@ -195,9 +195,7 @@ class RBAC(object):
         assert self._user_model, "Please set user model before authenticate."
         user = current_user
         if not isinstance(user._get_current_object(), self._user_model) and not isinstance(user._get_current_object(), AnonymousUser):
-            raise TypeError(
-                "%s is not an instance of %s" %
-                (user, self._user_model.__class__))
+            raise TypeError(f"{user} is not an instance of {self._user_model.__class__}")
 
         endpoint = request.endpoint
         resource = app.view_functions.get(endpoint, None)
@@ -206,11 +204,7 @@ class RBAC(object):
             abort(404)
 
         method = request.method
-        if not hasattr(user, 'get_roles'):
-            roles = [anonymous]
-        else:
-            roles = user.get_roles()
-
+        roles = user.get_roles() if hasattr(user, 'get_roles') else [anonymous]
         permit = self._check_permission(roles, method, resource)
         if not permit:
             return self._deny_hook(resource=resource)
@@ -224,32 +218,26 @@ class RBAC(object):
         if not self.acl.seted:
             self._setup_acl()
 
-        _roles = set()
         _methods = {'*', method}
         _resources = {None, resource}
 
-        _roles.add(anonymous)
-
+        _roles = {anonymous}
         _roles.update(roles)
 
-        for r, m, res in itertools.product(_roles, _methods, _resources):
-            if self.acl.is_allowed(r.name, m, res):
-                return True
-
-        return False
+        return any(
+            self.acl.is_allowed(r.name, m, res)
+            for r, m, res in itertools.product(_roles, _methods, _resources)
+        )
 
     def _deny_hook(self, resource=None):
         app = self.get_app()
-        if current_user.is_authenticated:
-            status = 403
-        else:
-            status = 401
+        status = 403 if current_user.is_authenticated else 401
         #abort(status)
 
         if app.config.get('FRONTED_BY_NGINX'):
-                url = "https://{}:{}{}".format(app.config.get('FQDN'), app.config.get('NGINX_PORT'), '/login')
+            url = f"https://{app.config.get('FQDN')}:{app.config.get('NGINX_PORT')}/login"
         else:
-                url = "http://{}:{}{}".format(app.config.get('FQDN'), app.config.get('API_PORT'), '/login')
+            url = f"http://{app.config.get('FQDN')}:{app.config.get('API_PORT')}/login"
         if current_user.is_authenticated:
             auth_dict = {
                 "authenticated": True,

@@ -7,8 +7,9 @@ RETURN_TO = 'http://localhost:5000'
 
 VALID_OKTA_AUTH_RESPONSE = {
     'code': 'somecode',
-    'state': 'clientId,0oagdrujcfsH6mYQz0h7,redirectUri,http://localhost:5000/api/1/auth/okta,return_to,{}'.format(RETURN_TO),
+    'state': f'clientId,0oagdrujcfsH6mYQz0h7,redirectUri,http://localhost:5000/api/1/auth/okta,return_to,{RETURN_TO}',
 }
+
 INVALID_OKTA_AUTH_RESPONSE = {
     'code': 'somecode',
     'state': 'clientId,<invalid>,redirectUri,http://localhost:5000/api/1/auth/okta,return_to,http://localhost:5000',

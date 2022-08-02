@@ -38,7 +38,7 @@ class RDSDBClusterAuditor(Auditor):
         "port": 3306
         """
         port = item.config.get('port')
-        return dict(TCP=set([port]))
+        return dict(TCP={port})
 
     def check_internet_accessible(self, item):
         security_groups = item.config.get('vpc_security_groups', [])

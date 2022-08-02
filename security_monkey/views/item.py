@@ -87,10 +87,6 @@ class ItemGet(AuthenticatedService):
         query = Item.query.filter(Item.id == item_id)
         result = query.first()
 
-        # result should be an Item with a list of audit thingers and a list of
-        # revisions
-        retval = {}
-
         item_marshaled = marshal(result.__dict__, ITEM_FIELDS)
         item_marshaled = dict(
             list(item_marshaled.items()) +
@@ -98,10 +94,7 @@ class ItemGet(AuthenticatedService):
             list({'account_type': result.account.account_type.name}.items()) +
             list({'technology': result.technology.name}.items())
         )
-        retval['item'] = item_marshaled
-        retval['issues'] = []
-        retval['auth'] = self.auth_dict
-
+        retval = {'item': item_marshaled, 'issues': [], 'auth': self.auth_dict}
         comments_marshaled = []
         for comment in result.comments:
             comment_marshaled = marshal(comment, ITEM_COMMENT_FIELDS)
@@ -219,11 +212,11 @@ class ItemList(AuthenticatedService):
         # Read more about filtering:
         # https://docs.sqlalchemy.org/en/latest/orm/query.html
         query = Item.query.join((ItemRevision, Item.latest_revision_id == ItemRevision.id))
-        
+
         # Fix for issue https://github.com/Netflix/security_monkey/issues/1150
         # PR https://github.com/Netflix/security_monkey/pull/1153
         join_account = False
-        
+
         if 'regions' in args:
             regions = args['regions'].split(',')
             query = query.filter(Item.region.in_(regions))
@@ -256,16 +249,19 @@ class ItemList(AuthenticatedService):
             join_account = True
         if 'searchconfig' in args:
             searchconfig = args['searchconfig']
-            query = query.filter(cast(ItemRevision.config, String).ilike('%{}%'.format(searchconfig)))
+            query = query.filter(
+                cast(ItemRevision.config, String).ilike(f'%{searchconfig}%')
+            )
+
         if 'min_score' in args:
             min_score = args['min_score']
             query = query.filter(Item.score >= min_score)
         if 'min_unjustified_score' in args:
             min_unjustified_score = args['min_unjustified_score']
             query = query.filter(Item.unjustified_score >= min_unjustified_score)
-        if join_account == True:
+        if join_account:
             query = query.join((Account, Account.id == Item.account_id))
- 
+
 
         # Eager load the joins except for the revisions because of the dynamic lazy relationship
         query = query.options(joinedload('issues'))

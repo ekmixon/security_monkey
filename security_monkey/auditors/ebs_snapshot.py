@@ -61,7 +61,7 @@ class EBSSnapshotAuditor(Auditor):
         for uid in self._get_permissions(item):
 
             # handled as a special case of internet accessible access.
-            if 'aws-marketplace' == uid:
+            if uid == 'aws-marketplace':
                 continue
 
             entity = Entity(category='account', value=uid)

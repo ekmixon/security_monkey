@@ -44,18 +44,24 @@ class RDSDBInstanceTestCase(SecurityMonkeyTestCase):
         from security_monkey.watchers.rds.rds_db_instance import RDSDBInstanceItem
         item = RDSDBInstanceItem(
             account='TEST_ACCOUNT',
-            name='MyRDSDbInstance', 
-            arn=ARN_PREFIX + ":rds:" + AWS_DEFAULT_REGION + ":012345678910:db/MyDBInstance",
-            config=rds_instance)
+            name='MyRDSDbInstance',
+            arn=f"{ARN_PREFIX}:rds:{AWS_DEFAULT_REGION}:012345678910:db/MyDBInstance",
+            config=rds_instance,
+        )
+
 
         def mock_get_auditor_support_items(*args, **kwargs):
+
             class MockIngressIssue:
                 issue = 'Internet Accessible'
                 notes = 'Entity: [cidr:0.0.0.0/0] Access: [ingress:tcp:3306]'
                 score = 10
 
+
+
             class DBItem:
-                issues = list()
+                issues = []
+
 
             from security_monkey.watchers.security_group import SecurityGroupItem
             sg_item = SecurityGroupItem(

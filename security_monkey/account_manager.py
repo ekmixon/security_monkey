@@ -37,12 +37,11 @@ class AccountManagerType(type):
     Generates a global account registry as AccountManager derived classes
     are loaded
     """
-    def __init__(cls, name, bases, attrs):
-        super(AccountManagerType, cls).__init__(name, bases, attrs)
-        if cls.account_type:
-            app.logger.info("Registering account %s %s",
-                            cls.account_type, cls.__name__)
-            account_registry[cls.account_type] = cls
+    def __init__(self, name, bases, attrs):
+        super(AccountManagerType, self).__init__(name, bases, attrs)
+        if self.account_type:
+            app.logger.info("Registering account %s %s", self.account_type, self.__name__)
+            account_registry[self.account_type] = self
 
 
 class CustomFieldConfig(object):
@@ -121,14 +120,14 @@ class AccountManager(object, metaclass=AccountManagerType):
             account = Account.query.filter(Account.id == account_id).first()
 
             if not account:
-                app.logger.error("Account with ID {} does not exist.".format(account_id))
+                app.logger.error(f"Account with ID {account_id} does not exist.")
                 return None
 
             # Are we changing the account name?
             if account.name != name:
                 # Check if the account with that name exists:
                 if Account.query.filter(Account.name == name).first():
-                    app.logger.error("Account with name: {} already exists.".format(name))
+                    app.logger.error(f"Account with name: {name} already exists.")
                     raise AccountNameExists(name)
 
                 account.name = self.sanitize_account_name(name)
@@ -136,7 +135,7 @@ class AccountManager(object, metaclass=AccountManagerType):
         else:
             account = Account.query.filter(Account.name == name).first()
             if not account:
-                app.logger.error("Account with name {} does not exist.".format(name))
+                app.logger.error(f"Account with name {name} does not exist.")
                 return None
 
         account.active = active
@@ -165,8 +164,7 @@ class AccountManager(object, metaclass=AccountManagerType):
 
         # Make sure the account doesn't already exist:
         if account:
-            app.logger.error(
-                'Account with name {} already exists!'.format(name))
+            app.logger.error(f'Account with name {name} already exists!')
             return None
 
         account = Account()
@@ -185,10 +183,7 @@ class AccountManager(object, metaclass=AccountManagerType):
         query = Account.query.filter(
             Account.identifier == self.sanitize_account_identifier(identifier))
 
-        if query.count():
-            return query.first()
-        else:
-            return None
+        return query.first() if query.count() else None
 
     def _load(self, account):
         """
@@ -215,14 +210,10 @@ class AccountManager(object, metaclass=AccountManagerType):
         return account
 
     def _update_custom_fields(self, account, provided_custom_fields):
-        existing_values = {}
-
         if account.custom_fields is None:
             account.custom_fields = []
 
-        for cf in account.custom_fields:
-            existing_values[cf.name] = cf
-
+        existing_values = {cf.name: cf for cf in account.custom_fields}
         for custom_config in self.custom_field_configs:
             if custom_config.db_item:
                 # The default value for a field that is not present and without any value set is `None`.
@@ -250,9 +241,10 @@ class AccountManager(object, metaclass=AccountManagerType):
                     db.session.add(account)
 
     def is_compatible_with_account_type(self, account_type):
-        if self.account_type == account_type or account_type in self.compatable_account_types:
-            return True
-        return False
+        return (
+            self.account_type == account_type
+            or account_type in self.compatable_account_types
+        )
 
 
 def load_all_account_types():
@@ -268,8 +260,10 @@ def _get_or_create_account_type(account_type):
         account_type_result = AccountType(name=account_type)
         db.session.add(account_type_result)
         db.session.commit()
-        app.logger.info("Creating a new AccountType: {} - ID: {}"
-                        .format(account_type, account_type_result.id))
+        app.logger.info(
+            f"Creating a new AccountType: {account_type} - ID: {account_type_result.id}"
+        )
+
 
     return account_type_result
 
@@ -303,7 +297,9 @@ def delete_account_by_id(account_id):
         User.accounts.any(Account.id == account_id)).all()
     for user in users:
         user.accounts = [
-            account for account in user.accounts if not account.id == account_id]
+            account for account in user.accounts if account.id != account_id
+        ]
+
         db.session.add(user)
         db.session.commit()
 
@@ -372,8 +368,9 @@ def delete_account_by_name(name):
 def bulk_disable_accounts(account_names):
     """Bulk disable accounts"""
     for account_name in account_names:
-        account = Account.query.filter(Account.name == account_name).first()
-        if account:
+        if account := Account.query.filter(
+            Account.name == account_name
+        ).first():
             app.logger.debug("Disabling account %s", account.name)
             account.active = False
             db.session.add(account)
@@ -385,8 +382,9 @@ def bulk_disable_accounts(account_names):
 def bulk_enable_accounts(account_names):
     """Bulk enable accounts"""
     for account_name in account_names:
-        account = Account.query.filter(Account.name == account_name).first()
-        if account:
+        if account := Account.query.filter(
+            Account.name == account_name
+        ).first():
             app.logger.debug("Enabling account %s", account.name)
             account.active = True
             db.session.add(account)

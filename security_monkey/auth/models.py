@@ -39,14 +39,12 @@ class RBACRole(object):
     def get_parents(self):
         for parent in self.parents:
             yield parent
-            for grandparent in parent.get_parents():
-                yield grandparent
+            yield from parent.get_parents()
 
     def get_children(self):
         for child in self.children:
             yield child
-            for grandchild in child.get_children():
-                yield grandchild
+            yield from child.get_children()
 
     @staticmethod
     def get_by_name(name):
@@ -65,8 +63,7 @@ class RBACUserMixin(object):
     def get_roles(self):
         roles = [RBACRole.roles["anonymous"]]
         if self.role:
-            role = RBACRole.roles[self.role]
-            if role:
+            if role := RBACRole.roles[self.role]:
                 roles.append(role)
 
         return roles

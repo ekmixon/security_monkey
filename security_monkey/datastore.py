@@ -112,10 +112,10 @@ class Account(db.Model):
     exceptions = relationship("ExceptionLogs", backref="account", cascade="all, delete, delete-orphan")
 
     def getCustom(self, name):
-        for field in self.custom_fields:
-            if field.name == name:
-                return field.value
-        return None
+        return next(
+            (field.value for field in self.custom_fields if field.name == name),
+            None,
+        )
 
 
 class AccountTypeCustomValues(db.Model):
@@ -191,7 +191,7 @@ class User(UserMixin, db.Model, RBACUserMixin):
     role = db.Column(db.String(30), default="View")
 
     def __str__(self):
-        return '<User id=%s email=%s>' % (self.id, self.email)
+        return f'<User id={self.id} email={self.email}>'
 
 
 issue_item_association = db.Table('issue_item_association',
@@ -236,9 +236,7 @@ class ItemAudit(db.Model):
         return self.__str__()
 
     def sub_ids(self):
-        item_ids = []
-        for sub_item in self.sub_items:
-            item_ids.append(sub_item.id)
+        item_ids = [sub_item.id for sub_item in self.sub_items]
         return str(item_ids.sort())
 
     def key(self):
@@ -315,13 +313,15 @@ class Item(db.Model):
             AuditorSettings.disabled == False).one()[0] or 0
 
     @score.expression
-    def score(cls):
-        return select([func.sum(ItemAudit.score)]). \
-            where(ItemAudit.item_id == cls.id). \
-            where(ItemAudit.auditor_setting_id == AuditorSettings.id). \
-            where(ItemAudit.fixed == False). \
-            where(AuditorSettings.disabled == False). \
-            label('item_score')
+    def score(self):
+        return (
+            select([func.sum(ItemAudit.score)])
+            .where(ItemAudit.item_id == self.id)
+            .where(ItemAudit.auditor_setting_id == AuditorSettings.id)
+            .where(ItemAudit.fixed == False)
+            .where(AuditorSettings.disabled == False)
+            .label('item_score')
+        )
 
     @hybrid_property
     def unjustified_score(self):
@@ -337,14 +337,16 @@ class Item(db.Model):
             AuditorSettings.disabled == False).one()[0] or 0
 
     @unjustified_score.expression
-    def unjustified_score(cls):
-        return select([func.sum(ItemAudit.score)]). \
-            where(ItemAudit.item_id == cls.id). \
-            where(ItemAudit.justified == False). \
-            where(ItemAudit.fixed == False). \
-            where(ItemAudit.auditor_setting_id == AuditorSettings.id). \
-            where(AuditorSettings.disabled == False). \
-            label('item_unjustified_score')
+    def unjustified_score(self):
+        return (
+            select([func.sum(ItemAudit.score)])
+            .where(ItemAudit.item_id == self.id)
+            .where(ItemAudit.justified == False)
+            .where(ItemAudit.fixed == False)
+            .where(ItemAudit.auditor_setting_id == AuditorSettings.id)
+            .where(AuditorSettings.disabled == False)
+            .label('item_unjustified_score')
+        )
 
     issue_count = column_property(
         select([func.count(ItemAudit.id)])
@@ -567,9 +569,11 @@ class Datastore(object):
                 items = query.all()
                 break
             except Exception as e:
-                app.logger.warn("Database Exception in Datastore::get_all_ctype_filtered. "
-                                "Sleeping for a few seconds. Attempt {}.".format(attempt))
-                app.logger.debug("Exception: {}".format(e))
+                app.logger.warn(
+                    f"Database Exception in Datastore::get_all_ctype_filtered. Sleeping for a few seconds. Attempt {attempt}."
+                )
+
+                app.logger.debug(f"Exception: {e}")
                 import time
                 time.sleep(5)
                 attempt = attempt + 1
@@ -578,7 +582,7 @@ class Datastore(object):
 
         for item in items:
             if not item.latest_revision_id:
-                app.logger.debug("There are no itemrevisions for this item: {}".format(item.id))
+                app.logger.debug(f"There are no itemrevisions for this item: {item.id}")
                 continue
             most_recent = ItemRevision.query.get(item.latest_revision_id)
             if not most_recent.active and not include_inactive:
@@ -606,7 +610,7 @@ class Datastore(object):
         """
         Saves an itemrevision.  Create the item if it does not already exist.
         """
-        new_issues = new_issues if new_issues else []
+        new_issues = new_issues or []
         item = self._get_item(ctype, region, account, name)
 
         if arn:
@@ -642,15 +646,19 @@ class Datastore(object):
 
         # Add new issues
         for new_issue in new_issues:
-            nk = "{}/{}".format(new_issue.issue, new_issue.notes)
-            if nk not in ["{}/{}".format(old_issue.issue, old_issue.notes) for old_issue in item.issues]:
+            nk = f"{new_issue.issue}/{new_issue.notes}"
+            if nk not in [
+                f"{old_issue.issue}/{old_issue.notes}" for old_issue in item.issues
+            ]:
                 item.issues.append(new_issue)
                 db.session.add(new_issue)
 
         # Delete old issues
         for old_issue in item.issues:
-            ok = "{}/{}".format(old_issue.issue, old_issue.notes)
-            if ok not in ["{}/{}".format(new_issue.issue, new_issue.notes) for new_issue in new_issues]:
+            ok = f"{old_issue.issue}/{old_issue.notes}"
+            if ok not in [
+                f"{new_issue.issue}/{new_issue.notes}" for new_issue in new_issues
+            ]:
                 db.session.delete(old_issue)
 
         db.session.add(item)
@@ -693,15 +701,15 @@ class Datastore(object):
         """
         account_result = Account.query.filter(Account.name == account).first()
         if not account_result:
-            raise Exception("Account with name [{}] not found.".format(account))
+            raise Exception(f"Account with name [{account}] not found.")
 
         item = Item.query.join((Technology, Item.tech_id == Technology.id)) \
-            .join((Account, Item.account_id == Account.id)) \
-            .filter(Technology.name == technology) \
-            .filter(Account.name == account) \
-            .filter(Item.region == region) \
-            .filter(Item.name == name) \
-            .all()
+                .join((Account, Item.account_id == Account.id)) \
+                .filter(Technology.name == technology) \
+                .filter(Account.name == account) \
+                .filter(Item.region == region) \
+                .filter(Item.name == name) \
+                .all()
 
         if len(item) > 1:
             app.logger.error("[?] Duplicate items have been detected: {a}/{t}/{r}/{n}. Removing duplicate...".format(
@@ -720,8 +728,10 @@ class Datastore(object):
                 technology_result = Technology(name=technology)
                 db.session.add(technology_result)
                 db.session.commit()
-                app.logger.info("Creating a new Technology: {} - ID: {}"
-                                .format(technology, technology_result.id))
+                app.logger.info(
+                    f"Creating a new Technology: {technology} - ID: {technology_result.id}"
+                )
+
             item = Item(tech_id=technology_result.id, region=region, account_id=account_result.id, name=name)
             db.session.add(item)
             db.session.commit()
@@ -739,23 +749,26 @@ def store_exception(source, location, exception, ttl=None):
     :return:
     """
     try:
-        app.logger.debug("Logging exception from {} with location: {} to the database.".format(source, location))
+        app.logger.debug(
+            f"Logging exception from {source} with location: {location} to the database."
+        )
+
         message = str(exception)[:512]
 
         exception_entry = ExceptionLogs(source=source, ttl=ttl, type=type(exception).__name__,
                                         message=message, stacktrace=traceback.format_exc())
         if location:
             if len(location) == 4:
-                item = Item.query.filter(Item.name == location[3]).first()
-                if item:
+                if item := Item.query.filter(Item.name == location[3]).first():
                     exception_entry.item_id = item.id
 
             if len(location) >= 3:
                 exception_entry.region = location[2]
 
             if len(location) >= 2:
-                account = Account.query.filter(Account.name == location[1]).one()
-                if account:
+                if account := Account.query.filter(
+                    Account.name == location[1]
+                ).one():
                     exception_entry.account_id = account.id
 
             if len(location) >= 1:
@@ -765,7 +778,10 @@ def store_exception(source, location, exception, ttl=None):
                     db.session.add(technology)
                     db.session.commit()
                     db.session.refresh(technology)
-                    app.logger.info("Creating a new Technology: {} - ID: {}".format(technology.name, technology.id))
+                    app.logger.info(
+                        f"Creating a new Technology: {technology.name} - ID: {technology.id}"
+                    )
+
                 exception_entry.tech_id = technology.id
 
         db.session.add(exception_entry)
@@ -810,7 +826,10 @@ def delete_item_revisions_by_date(start_date, end_date):
         # How many revisions does this item have?
         total_number_of_revisions = db.session.query(ItemRevision).filter(ItemRevision.item_id == item.id).count()
         if total_number_of_revisions == len(affected_revisions):
-            app.logger.info("[+] Marking Item: {} for deletion as all revisions are in the deletion timeframe.".format(item.arn))
+            app.logger.info(
+                f"[+] Marking Item: {item.arn} for deletion as all revisions are in the deletion timeframe."
+            )
+
             whole_items_to_delete.append(item)
 
             # Purge the whole items on 100 item batches
@@ -829,7 +848,10 @@ def delete_item_revisions_by_date(start_date, end_date):
         for af in affected_revisions:
             total_revisions_deleted += 1
             affected_revision_ids.add(af.id)
-            app.logger.info("[+] Marking Item Revision for Item: {} / {} to be deleted...".format(af.date_created, item.arn))
+            app.logger.info(
+                f"[+] Marking Item Revision for Item: {af.date_created} / {item.arn} to be deleted..."
+            )
+
             db.session.delete(af)
 
         # Check if the latest revision ID for the item is in the affected revision:
@@ -841,12 +863,17 @@ def delete_item_revisions_by_date(start_date, end_date):
                                                                          ).order_by(desc(ItemRevision.date_created)).first()
             # Update the item to point to the last good revision:
             item.latest_revision_id = latest_good_revision.id
-            app.logger.info("[~] The item's latest revision is in the deletion list. "
-                            "Updating with the last known good change item: {}.".format(latest_good_revision.date_created))
+            app.logger.info(
+                f"[~] The item's latest revision is in the deletion list. Updating with the last known good change item: {latest_good_revision.date_created}."
+            )
+
             db.session.add(item)
 
         db.session.commit()
-        app.logger.info("[-] Deleted {} Item Revisions for Item: {}".format(len(affected_revisions), item.arn))
+        app.logger.info(
+            f"[-] Deleted {len(affected_revisions)} Item Revisions for Item: {item.arn}"
+        )
+
 
     # Delete remaining whole items not processed in the 100 batches above:
     for item_to_delete in whole_items_to_delete:
@@ -854,5 +881,5 @@ def delete_item_revisions_by_date(start_date, end_date):
         whole_items_deleted += 1
     db.session.commit()
 
-    app.logger.info("[-] Deleted {} full items.".format(whole_items_deleted))
-    app.logger.info("[-] Deleted {} individual revisions.".format(total_revisions_deleted))
+    app.logger.info(f"[-] Deleted {whole_items_deleted} full items.")
+    app.logger.info(f"[-] Deleted {total_revisions_deleted} individual revisions.")

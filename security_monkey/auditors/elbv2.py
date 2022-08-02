@@ -99,12 +99,14 @@ class ELBv2Auditor(Auditor):
 
         http://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies
         """
-        supported_ssl_policies = set([
+        supported_ssl_policies = {
             'ELBSecurityPolicy-2016-08',
             'ELBSecurityPolicy-TLS-1-2-2017-01',
             'ELBSecurityPolicy-TLS-1-1-2017-01',
             'ELBSecurityPolicy-2015-05',
-            'ELBSecurityPolicy-TLS-1-0-2015-04'])
+            'ELBSecurityPolicy-TLS-1-0-2015-04',
+        }
+
 
         for listener in alb.config.get('Listeners', []):
             port = '['+str(listener.get('Port'))+']'

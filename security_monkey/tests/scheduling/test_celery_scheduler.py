@@ -17,6 +17,7 @@
 .. version:: $$VERSION$$
 .. moduleauthor::  Mike Grima <mgrima@netflix.com>
 """
+
 import json
 
 import boto3
@@ -59,7 +60,7 @@ ROLE_CONF = {
     "region": "universal",
     "name": "roleNumber",
     "InlinePolicies": {"ThePolicy": OPEN_POLICY},
-    "Arn": ARN_PREFIX + ":iam::012345678910:role/roleNumber"
+    "Arn": f"{ARN_PREFIX}:iam::012345678910:role/roleNumber",
 }
 
 
@@ -134,7 +135,7 @@ class CelerySchedulerTestCase(SecurityMonkeyTestCase):
                 }
             ]
         }
-        for x in range(0, 11):
+        for x in range(11):
             # Create the IAM Role via Moto:
             aspd["Statement"][0]["Resource"] = ARN_PREFIX + ":iam:012345678910:role/roleNumber{}".format(x)
             client.create_role(Path="/", RoleName="roleNumber{}".format(x),
@@ -204,7 +205,7 @@ class CelerySchedulerTestCase(SecurityMonkeyTestCase):
             print("Removing role from instance profile ", each)
             client.remove_role_from_instance_profile(RoleName = "roleNumber9",InstanceProfileName=each['InstanceProfileName'])
         client.delete_role(RoleName="roleNumber9")
-        
+
         managedPolicy = client.list_attached_role_policies(RoleName="roleNumber10")
         for each in managedPolicy['AttachedPolicies']:
             print("Detaching ", each)
@@ -233,10 +234,21 @@ class CelerySchedulerTestCase(SecurityMonkeyTestCase):
         assert len(ItemRevision.query.all()) == 13
 
         # Check that the deleted roles show as being inactive:
-        ir = ItemRevision.query.join((Item, ItemRevision.id == Item.latest_revision_id)) \
-            .filter(Item.arn.in_(
-                [ARN_PREFIX + ":iam::012345678910:role/roleNumber9",
-                 ARN_PREFIX + ":iam::012345678910:role/roleNumber10"])).all()
+        ir = (
+            ItemRevision.query.join(
+                (Item, ItemRevision.id == Item.latest_revision_id)
+            )
+            .filter(
+                Item.arn.in_(
+                    [
+                        f"{ARN_PREFIX}:iam::012345678910:role/roleNumber9",
+                        f"{ARN_PREFIX}:iam::012345678910:role/roleNumber10",
+                    ]
+                )
+            )
+            .all()
+        )
+
 
         assert len(ir) == 2
         assert not ir[0].active
@@ -283,10 +295,10 @@ class CelerySchedulerTestCase(SecurityMonkeyTestCase):
 
         # Create some IAM roles for testing:
         items = []
-        for x in range(0, 3):
+        for x in range(3):
             role_policy = dict(ROLE_CONF)
-            role_policy["Arn"] = ARN_PREFIX + ":iam::012345678910:role/roleNumber{}".format(x)
-            role_policy["RoleName"] = "roleNumber{}".format(x)
+            role_policy["Arn"] = ARN_PREFIX + f":iam::012345678910:role/roleNumber{x}"
+            role_policy["RoleName"] = f"roleNumber{x}"
             role = CloudAuxChangeItem.from_item(name=role_policy['RoleName'], item=role_policy,
                                                 record_region='universal', account_name=test_account.name,
                                                 index='iamrole', source_watcher=watcher)
@@ -319,18 +331,24 @@ class CelerySchedulerTestCase(SecurityMonkeyTestCase):
             ]
         }
 
-        if initial:
-            last = 11
-        else:
-            last = 9  # Simulates 2 deleted roles...
-
-        for x in range(0, last):
+        last = 11 if initial else 9
+        for x in range(last):
             # Create the IAM Role via Moto:
-            aspd["Statement"][0]["Resource"] = ARN_PREFIX + ":iam:012345678910:role/roleNumber{}".format(x)
-            client.create_role(Path="/", RoleName="roleNumber{}".format(x),
-                               AssumeRolePolicyDocument=json.dumps(aspd, indent=4))
-            client.put_role_policy(RoleName="roleNumber{}".format(x), PolicyName="testpolicy",
-                                   PolicyDocument=json.dumps(OPEN_POLICY, indent=4))
+            aspd["Statement"][0]["Resource"] = (
+                ARN_PREFIX + f":iam:012345678910:role/roleNumber{x}"
+            )
+
+            client.create_role(
+                Path="/",
+                RoleName=f"roleNumber{x}",
+                AssumeRolePolicyDocument=json.dumps(aspd, indent=4),
+            )
+
+            client.put_role_policy(
+                RoleName=f"roleNumber{x}",
+                PolicyName="testpolicy",
+                PolicyDocument=json.dumps(OPEN_POLICY, indent=4),
+            )
 
     @patch("security_monkey.task_scheduler.tasks.fix_orphaned_deletions")
     def test_report_batch_changes(self, mock_fix_orphaned):
@@ -460,14 +478,27 @@ class CelerySchedulerTestCase(SecurityMonkeyTestCase):
 
         assert not orphaned_item.latest_revision_id
         assert not orphaned_item.revisions.count()
-        assert len(Item.query.filter(Item.account_id == test_account.id, Item.tech_id == technology.id,
-                                     Item.latest_revision_id == None).all()) == 1  # noqa
+        assert (
+            len(
+                Item.query.filter(
+                    Item.account_id == test_account.id,
+                    Item.tech_id == technology.id,
+                    Item.latest_revision_id is None,
+                ).all()
+            )
+            == 1
+        )
+
 
         from security_monkey.task_scheduler.tasks import fix_orphaned_deletions
         fix_orphaned_deletions(test_account.name, technology.name)
 
-        assert not Item.query.filter(Item.account_id == test_account.id, Item.tech_id == technology.id,
-                                     Item.latest_revision_id == None).all()  # noqa
+        assert not Item.query.filter(
+            Item.account_id == test_account.id,
+            Item.tech_id == technology.id,
+            Item.latest_revision_id is None,
+        ).all()
+
 
         assert orphaned_item.latest_revision_id
         assert orphaned_item.revisions.count() == 1
@@ -791,7 +822,7 @@ class CelerySchedulerTestCase(SecurityMonkeyTestCase):
         assert not mock_reporter.called
         assert mock_error.called
         assert mock_error.call_args[0][0] == "[X] Account has been removed or renamed: notanaccount. " \
-                                             "Please restart the scheduler to fix."
+                                                 "Please restart the scheduler to fix."
 
     @patch("security_monkey.task_scheduler.tasks.setup")
     @patch("security_monkey.task_scheduler.tasks.audit_changes")
@@ -805,4 +836,4 @@ class CelerySchedulerTestCase(SecurityMonkeyTestCase):
         assert not mock_audit_changes.called
         assert mock_error.called
         assert mock_error.call_args[0][0] == "[X] Account has been removed or renamed: notanaccount. " \
-                                             "Please restart the scheduler to fix."
+                                                 "Please restart the scheduler to fix."

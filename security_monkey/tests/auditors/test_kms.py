@@ -20,6 +20,7 @@
 
 
 """
+
 from security_monkey import db
 from security_monkey.datastore import Account, AccountType
 from security_monkey.tests import SecurityMonkeyTestCase
@@ -33,76 +34,73 @@ from copy import deepcopy
 # No Condition
 # rotation Enabled
 key0 = {
-  "Origin": "AWS_KMS",
-  "KeyId": "key_id",
-  "Description": "Description",
-  "Enabled": True,
-  "KeyUsage": "ENCRYPT_DECRYPT",
-  "Grants": [],
-  "Policies": [
-    {
-      "Version": "2012-10-17",
-      "Id": "key-consolepolicy-2",
-      "Statement": [
+    "Origin": "AWS_KMS",
+    "KeyId": "key_id",
+    "Description": "Description",
+    "Enabled": True,
+    "KeyUsage": "ENCRYPT_DECRYPT",
+    "Grants": [],
+    "Policies": [
         {
-          "Action": "kms:*",
-          "Sid": "Enable IAM User Permissions",
-          "Resource": "*",
-          "Effect": "Allow",
-          "Principal": {
-            "AWS": "*"
-          }
+            "Version": "2012-10-17",
+            "Id": "key-consolepolicy-2",
+            "Statement": [
+                {
+                    "Action": "kms:*",
+                    "Sid": "Enable IAM User Permissions",
+                    "Resource": "*",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                }
+            ],
         }
-      ]
-    }
-  ],
-  "KeyState": "Enabled",
-  "KeyRotationEnabled": True,
-  "CreationDate": "2017-01-05T20:39:18.960000+00:00",
-  "Arn": ARN_PREFIX + ":kms:" + AWS_DEFAULT_REGION + ":123456789123:key/key_id",
-  "AWSAccountId": "123456789123"
+    ],
+    "KeyState": "Enabled",
+    "KeyRotationEnabled": True,
+    "CreationDate": "2017-01-05T20:39:18.960000+00:00",
+    "Arn": f"{ARN_PREFIX}:kms:{AWS_DEFAULT_REGION}:123456789123:key/key_id",
+    "AWSAccountId": "123456789123",
 }
+
 
 # Access provided to role in same account
 # Rotation Not Enabled
 key1 = {
-  "Origin": "AWS_KMS",
-  "KeyId": "key_id",
-  "Description": "Description",
-  "Enabled": True,
-  "KeyUsage": "ENCRYPT_DECRYPT",
-  "Grants": [],
-  "Policies": [
-    {
-      "Version": "2012-10-17",
-      "Id": "key-consolepolicy-2",
-      "Statement": [
+    "Origin": "AWS_KMS",
+    "KeyId": "key_id",
+    "Description": "Description",
+    "Enabled": True,
+    "KeyUsage": "ENCRYPT_DECRYPT",
+    "Grants": [],
+    "Policies": [
         {
-          "Resource": "*",
-          "Effect": "Allow",
-          "Sid": "Allow attachment of persistent resources",
-          "Action": [
-            "kms:CreateGrant",
-            "kms:ListGrants",
-            "kms:RevokeGrant"
-          ],
-          "Condition": {
-            "Bool": {
-              "kms:GrantIsForAWSResource": "true"
-            }
-          },
-          "Principal": {
-            "AWS": "arn:aws:iam::123456789123:role/SuperRole"
-          }
+            "Version": "2012-10-17",
+            "Id": "key-consolepolicy-2",
+            "Statement": [
+                {
+                    "Resource": "*",
+                    "Effect": "Allow",
+                    "Sid": "Allow attachment of persistent resources",
+                    "Action": [
+                        "kms:CreateGrant",
+                        "kms:ListGrants",
+                        "kms:RevokeGrant",
+                    ],
+                    "Condition": {
+                        "Bool": {"kms:GrantIsForAWSResource": "true"}
+                    },
+                    "Principal": {
+                        "AWS": "arn:aws:iam::123456789123:role/SuperRole"
+                    },
+                }
+            ],
         }
-      ]
-    }
-  ],
-  "KeyState": "Enabled",
-  "KeyRotationEnabled": False,
-  "CreationDate": "2017-01-05T20:39:18.960000+00:00",
-  "Arn": ARN_PREFIX + ":kms:" + AWS_DEFAULT_REGION + ":123456789123:key/key_id",
-  "AWSAccountId": "123456789123"
+    ],
+    "KeyState": "Enabled",
+    "KeyRotationEnabled": False,
+    "CreationDate": "2017-01-05T20:39:18.960000+00:00",
+    "Arn": f"{ARN_PREFIX}:kms:{AWS_DEFAULT_REGION}:123456789123:key/key_id",
+    "AWSAccountId": "123456789123",
 }
 
 
@@ -137,8 +135,10 @@ class KMSTestCase(SecurityMonkeyTestCase):
 
         # Make sure it detects an internet accessible policy
         item = KMSMasterKey(
-            arn=ARN_PREFIX + ':kms:' + AWS_DEFAULT_REGION + ':123456789123:key/key_id',
-            config=key0)
+            arn=f'{ARN_PREFIX}:kms:{AWS_DEFAULT_REGION}:123456789123:key/key_id',
+            config=key0,
+        )
+
         auditor.check_internet_accessible(item)
 
         self.assertEqual(len(item.audit_issues), 1)
@@ -147,7 +147,7 @@ class KMSTestCase(SecurityMonkeyTestCase):
         # Copy of key0, but not internet accessible
         key0_fixed = deepcopy(key0)
         key0_fixed['Policies'][0]['Statement'][0]['Principal']['AWS'] \
-            = 'arn:aws:iam::123456789123:role/SomeRole'
+                = 'arn:aws:iam::123456789123:role/SomeRole'
         item = KMSMasterKey(
             arn='arn:aws:kms:us-east-1:123456789123:key/key_id',
             config=key0_fixed)
@@ -216,8 +216,11 @@ class KMSTestCase(SecurityMonkeyTestCase):
 
     def test_check_for_kms_key_rotation(self):
         auditor = KMSAuditor(accounts=['unittestaccount'])
-        item = KMSMasterKey(arn=ARN_PREFIX + ':kms:' + AWS_DEFAULT_REGION + ':123456789123:key/key_id',
-                            config=key0)
+        item = KMSMasterKey(
+            arn=f'{ARN_PREFIX}:kms:{AWS_DEFAULT_REGION}:123456789123:key/key_id',
+            config=key0,
+        )
+
 
         auditor.check_for_kms_key_rotation(item)
         self.assertEqual(len(item.audit_issues), 0)

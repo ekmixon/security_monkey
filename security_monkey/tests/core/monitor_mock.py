@@ -96,11 +96,12 @@ def build_mock_result(watcher_configs, auditor_configs):
     for config in watcher_configs:
         watcher = mock_watcher(config)
 
-        auditors = []
+        auditors = [
+            mock_auditor(config)
+            for config in auditor_configs
+            if config['index'] == watcher.index
+        ]
 
-        for config in auditor_configs:
-            if config['index'] == watcher.index:
-                auditors.append(mock_auditor(config))
 
         CURRENT_MONITORS.append(MockMonitor(watcher, auditors))
 
@@ -135,9 +136,8 @@ def mock_all_monitors(account_name, debug=False):
 
 
 def mock_get_monitors(account_name, monitor_names, debug=False):
-    monitors = []
-    for monitor in CURRENT_MONITORS:
-        if monitor.watcher.index in monitor_names:
-            monitors.append(monitor)
-
-    return monitors
+    return [
+        monitor
+        for monitor in CURRENT_MONITORS
+        if monitor.watcher.index in monitor_names
+    ]

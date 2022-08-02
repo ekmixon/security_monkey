@@ -40,9 +40,14 @@ class ManageTestCase(SecurityMonkeyTestCase):
         self.account = Account(identifier="012345678910", name="testing",
                                account_type_id=account_type_result.id)
         self.technology = Technology(name="iamrole")
-        self.item = Item(region="us-west-2", name="testrole",
-                         arn=ARN_PREFIX + ":iam::012345678910:role/testrole", technology=self.technology,
-                         account=self.account)
+        self.item = Item(
+            region="us-west-2",
+            name="testrole",
+            arn=f"{ARN_PREFIX}:iam::012345678910:role/testrole",
+            technology=self.technology,
+            account=self.account,
+        )
+
 
         db.session.add(self.account)
         db.session.add(self.technology)
@@ -53,9 +58,9 @@ class ManageTestCase(SecurityMonkeyTestCase):
     def test_clear_expired_exceptions(self):
         location = ("iamrole", "testing", "us-west-2", "testrole")
 
-        for i in range(0, 5):
+        for i in range(5):
             try:
-                raise ValueError("This is test: {}".format(i))
+                raise ValueError(f"This is test: {i}")
             except ValueError as e:
                 test_exception = e
 

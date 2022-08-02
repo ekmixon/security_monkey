@@ -172,7 +172,7 @@ class ELBAuditor(Auditor):
         vpc = elb_item.config.get('VPCId', None)
         if scheme and scheme == "internet-facing" and not vpc:
             self.add_issue(1, Categories.INTERNET_ACCESSIBLE, elb_item, notes='EC2 Classic ELB has internet-facing scheme.')
-        elif scheme and scheme == "internet-facing" and vpc:
+        elif scheme and scheme == "internet-facing":
             security_group_ids = set(elb_item.config.get('SecurityGroups', []))
             sg_auditor_items = self.get_auditor_support_items(SecurityGroup.index, elb_item.account)
             security_auditor_groups = [sg for sg in sg_auditor_items if sg.config.get('id') in security_group_ids]
@@ -265,7 +265,7 @@ class ELBAuditor(Auditor):
                 reason="Uses diffie-hellman (DHE-DSS-AES1280SHA)",
                 cve='LOGJAM CVE-2015-4000')
             self.add_issue(5, Categories.INSECURE_TLS, elb_item, notes=notes)
-            
+
             notes = Categories.INSECURE_TLS_NOTES.format(
                 policy=reference_policy, port=ports,
                 reason="Contains RC4 ciphers (ECDHE-RSA-RC4-SHA and RC4-SHA)")
@@ -308,7 +308,7 @@ class ELBAuditor(Auditor):
                 reason='Weak cipher (DES-CBC3-SHA) for Windows XP support',
                 cve='SWEET32 CVE-2016-2183')
             self.add_issue(5, Categories.INSECURE_TLS, elb_item, notes=notes)
-            
+
             notes = Categories.INSECURE_TLS_NOTES_2.format(
                 policy=reference_policy, port=ports,
                 reason="Uses diffie-hellman (DHE-DSS-AES1280SHA)",
@@ -331,7 +331,10 @@ class ELBAuditor(Auditor):
             # https://forums.aws.amazon.com/ann.jspa?annID=3996
             return
 
-        if reference_policy == 'ELBSecurityPolicy-TLS-1-1-2017-01' or reference_policy == 'ELBSecurityPolicy-TLS-1-2-2017-01':
+        if reference_policy in [
+            'ELBSecurityPolicy-TLS-1-1-2017-01',
+            'ELBSecurityPolicy-TLS-1-2-2017-01',
+        ]:
             # Transitional policies for early TLS deprecation
             # https://forums.aws.amazon.com/ann.jspa?annID=4475
             return

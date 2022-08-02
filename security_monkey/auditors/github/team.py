@@ -39,7 +39,7 @@ class GitHubTeamAuditor(Auditor):
         :param team_item:
         :return:
         """
-        tag = "This team is no secret... to people in the org."
-
         if team_item.config["privacy"] == "closed":
+            tag = "This team is no secret... to people in the org."
+
             self.add_issue(1, tag, team_item, notes="Team is visible to all org members")

@@ -99,19 +99,15 @@ class GCSBucketAuditor(Auditor):
 
         return: (bool, [list of AuditIssues])
         """
-        acl = item.config.get('Acl')
-        errors_acl = []
-        if acl:
-            err = self._acl_allusers_exists(acl, 'ACL')
-            errors_acl.extend(err) if err else None
-
-            err = self._acl_max_owners(acl, 'ACL')
-            errors_acl.extend(err) if err else None
-            if errors_acl:
-                return (False, errors_acl)
-            return (True, None)
-        else:
+        if not (acl := item.config.get('Acl')):
             return (False, [make_audit_issue("ACL", 'FOUND', "NOT")])
+        err = self._acl_allusers_exists(acl, 'ACL')
+        errors_acl = []
+        errors_acl.extend(err) if err else None
+
+        err = self._acl_max_owners(acl, 'ACL')
+        errors_acl.extend(err) if err else None
+        return (False, errors_acl) if errors_acl else (True, None)
 
     def inspect_default_object_acl(self, item):
         """
@@ -119,19 +115,15 @@ class GCSBucketAuditor(Auditor):
 
         return: (bool, [list of AuditIssues])
         """
-        def_obj_acl = item.config.get('DefaultObjectAcl')
-        errors_acl = []
-        if def_obj_acl:
-            err = self._acl_allusers_exists(def_obj_acl, 'DEFAULT_OBJECT_ACL')
-            errors_acl.extend(err) if err else None
-
-            err = self._acl_max_owners(def_obj_acl, 'DEFAULT_OBJECT_ACL')
-            errors_acl.extend(err) if err else None
-            if errors_acl:
-                return (False, errors_acl)
-            return (True, None)
-        else:
+        if not (def_obj_acl := item.config.get('DefaultObjectAcl')):
             return (False, [make_audit_issue("DEFAULT_OBJECT_ACL", 'FOUND', "NOT")])
+        err = self._acl_allusers_exists(def_obj_acl, 'DEFAULT_OBJECT_ACL')
+        errors_acl = []
+        errors_acl.extend(err) if err else None
+
+        err = self._acl_max_owners(def_obj_acl, 'DEFAULT_OBJECT_ACL')
+        errors_acl.extend(err) if err else None
+        return (False, errors_acl) if errors_acl else (True, None)
 
     def inspect_cors(self, item):
         """
@@ -139,8 +131,7 @@ class GCSBucketAuditor(Auditor):
 
         return: (bool, [list of AuditIssues])
         """
-        cors = item.config.get('Cors')
-        if cors:
+        if cors := item.config.get('Cors'):
             errors = []
             err = self._cors_method(cors)
             errors.extend(err) if err else None

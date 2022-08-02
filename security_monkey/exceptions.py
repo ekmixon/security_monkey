@@ -36,7 +36,7 @@ class InvalidARN(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Given an invalid ARN: {}".format(self.bad_arn))
+        return repr(f"Given an invalid ARN: {self.bad_arn}")
 
 
 class InvalidSourceOwner(SecurityMonkeyException):
@@ -47,7 +47,7 @@ class InvalidSourceOwner(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Given an invalid SourceOwner: {}".format(self.bad_source_owner))
+        return repr(f"Given an invalid SourceOwner: {self.bad_source_owner}")
 
 
 class InvalidAWSJSON(SecurityMonkeyException):
@@ -58,7 +58,7 @@ class InvalidAWSJSON(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Could not parse invalid JSON from AWS:\n {}".format(self.bad_json))
+        return repr(f"Could not parse invalid JSON from AWS:\n {self.bad_json}")
 
 
 class BotoConnectionIssue(SecurityMonkeyException):
@@ -72,8 +72,7 @@ class BotoConnectionIssue(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Problem Connecting to {}/{}/{}".format(
-            self.tech, self.account, self.region))
+        return repr(f"Problem Connecting to {self.tech}/{self.account}/{self.region}")
 
 
 class S3PermissionsIssue(SecurityMonkeyException):
@@ -84,9 +83,13 @@ class S3PermissionsIssue(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("AWS returned an exception while attempting " +
-                    "to obtain information on a bucket I should " +
-                    "have access to. Bucket Name: {}".format(self.bucket_name))
+        return repr(
+            (
+                "AWS returned an exception while attempting "
+                + "to obtain information on a bucket I should "
+                + f"have access to. Bucket Name: {self.bucket_name}"
+            )
+        )
 
 
 class S3ACLReturnedNoneDisplayName(SecurityMonkeyException):
@@ -97,9 +100,13 @@ class S3ACLReturnedNoneDisplayName(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("AWS returned <DisplayName>None</DisplayName>" +
-                    " in the output of bhandle.get_acl().to_xml()." +
-                    " Bucket Name:{}".format(self.bucket_name))
+        return repr(
+            (
+                "AWS returned <DisplayName>None</DisplayName>"
+                + " in the output of bhandle.get_acl().to_xml()."
+                + f" Bucket Name:{self.bucket_name}"
+            )
+        )
 
 
 class AWSRateLimitReached(SecurityMonkeyException):
@@ -113,8 +120,9 @@ class AWSRateLimitReached(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Likely reached the AWS rate limit. {}/{}/{}:\n{}".format(
-            self.tech, self.account, self.region, self.connection_message))
+        return repr(
+            f"Likely reached the AWS rate limit. {self.tech}/{self.account}/{self.region}:\n{self.connection_message}"
+        )
 
 
 class AccountNameExists(SecurityMonkeyException):
@@ -125,8 +133,9 @@ class AccountNameExists(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Account with name: {} already exists. Cannnot create"
-                    " or rename account with this name.".format(self.account_name))
+        return repr(
+            f"Account with name: {self.account_name} already exists. Cannnot create or rename account with this name."
+        )
 
 
 class ZoneIDNotFound(SecurityMonkeyException):
@@ -137,7 +146,7 @@ class ZoneIDNotFound(SecurityMonkeyException):
         app.logger.error(self)
 
     def __str__(self):
-        return repr("Given domain ({}) not found in hosted zones".format(self.domain))
+        return repr(f"Given domain ({self.domain}) not found in hosted zones")
 
 
 class GitHubCredsError(SecurityMonkeyException):
@@ -148,7 +157,7 @@ class GitHubCredsError(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Unable to load GitHub credentials for account: {}".format(self.account))
+        return repr(f"Unable to load GitHub credentials for account: {self.account}")
 
 
 class InvalidResponseCodeFromGitHubError(SecurityMonkeyException):
@@ -160,9 +169,9 @@ class InvalidResponseCodeFromGitHubError(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Unable to load data from GitHub for the org: {} -- received HTTP response: {}".format(
-            self.organization, self.response_code
-        ))
+        return repr(
+            f"Unable to load data from GitHub for the org: {self.organization} -- received HTTP response: {self.response_code}"
+        )
 
 
 class InvalidResponseCodeFromGitHubRepoError(SecurityMonkeyException):
@@ -175,9 +184,9 @@ class InvalidResponseCodeFromGitHubRepoError(SecurityMonkeyException):
         app.logger.info(self)
 
     def __str__(self):
-        return repr("Unable to load data from GitHub for the repo: {}/{} -- received HTTP response: {}".format(
-            self.organization, self.repo, self.response_code
-        ))
+        return repr(
+            f"Unable to load data from GitHub for the repo: {self.organization}/{self.repo} -- received HTTP response: {self.response_code}"
+        )
 
 
 class UnableToIssueGoogleAuthToken(SecurityMonkeyException):
@@ -200,5 +209,4 @@ class InvalidCeleryConfigurationType(SecurityMonkeyException):
     """Invalid Security Monkey Celery configuration type"""
 
     def __init__(self, variable, required_type, value_type):
-        self.error_message = "Incorrect type for Security Monkey celery configuration variable: '{}', required: {}, " \
-                             "actual: {}".format(variable, required_type.__name__, value_type.__name__)
+        self.error_message = f"Incorrect type for Security Monkey celery configuration variable: '{variable}', required: {required_type.__name__}, actual: {value_type.__name__}"

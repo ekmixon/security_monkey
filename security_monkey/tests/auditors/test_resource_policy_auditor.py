@@ -73,17 +73,41 @@ class ResourcePolicyTestCase(SecurityMonkeyTestCase):
         db.session.add(account2)
         db.session.add(account3)
         db.session.commit()
-        
+
         datastore = Datastore()
         # S3
-        datastore.store('s3', 'us-east-1', 'TEST_ACCOUNT', 'my-test-s3-bucket',
-            True, dict(), arn='arn:aws:s3:::my-test-s3-bucket')
+        datastore.store(
+            's3',
+            'us-east-1',
+            'TEST_ACCOUNT',
+            'my-test-s3-bucket',
+            True,
+            {},
+            arn='arn:aws:s3:::my-test-s3-bucket',
+        )
 
-        datastore.store('s3', 'us-east-1', 'TEST_ACCOUNT_TWO', 'my-test-s3-bucket-two',
-            True, dict(), arn='arn:aws:s3:::my-test-s3-bucket-two')
 
-        datastore.store('s3', 'us-east-1', 'TEST_ACCOUNT_THREE', 'my-test-s3-bucket-three',
-            True, dict(), arn='arn:aws:s3:::my-test-s3-bucket-three')
+        datastore.store(
+            's3',
+            'us-east-1',
+            'TEST_ACCOUNT_TWO',
+            'my-test-s3-bucket-two',
+            True,
+            {},
+            arn='arn:aws:s3:::my-test-s3-bucket-two',
+        )
+
+
+        datastore.store(
+            's3',
+            'us-east-1',
+            'TEST_ACCOUNT_THREE',
+            'my-test-s3-bucket-three',
+            True,
+            {},
+            arn='arn:aws:s3:::my-test-s3-bucket-three',
+        )
+
 
         # IAM User
         datastore.store('iamuser', 'us-east-1', 'TEST_ACCOUNT', 'my-test-iam-user',
@@ -201,30 +225,54 @@ class ResourcePolicyTestCase(SecurityMonkeyTestCase):
         rpa = ResourcePolicyAuditor(accounts=["012345678910"])
         rpa.prep_for_audit()
 
-        self.assertEqual(rpa.OBJECT_STORE['s3']['my-test-s3-bucket'], set(['012345678910']))
-        self.assertEqual(rpa.OBJECT_STORE['ACCOUNTS']['FRIENDLY'], set(['012345678910', '222222222222']))
-        self.assertEqual(rpa.OBJECT_STORE['ACCOUNTS']['THIRDPARTY'], set(['333333333333']))
+        self.assertEqual(rpa.OBJECT_STORE['s3']['my-test-s3-bucket'], {'012345678910'})
+        self.assertEqual(
+            rpa.OBJECT_STORE['ACCOUNTS']['FRIENDLY'],
+            {'012345678910', '222222222222'},
+        )
+
+        self.assertEqual(rpa.OBJECT_STORE['ACCOUNTS']['THIRDPARTY'], {'333333333333'})
 
         self.assertEqual(
             set(rpa.OBJECT_STORE['userid'].keys()),
-            set(['AIDA11111111111111111', 'AISA11111111111111111',
-                 'AIDA22222222222222222', 'AISA22222222222222222',
-                 'AIDA33333333333333333', 'AISA33333333333333333']))
+            {
+                'AIDA11111111111111111',
+                'AISA11111111111111111',
+                'AIDA22222222222222222',
+                'AISA22222222222222222',
+                'AIDA33333333333333333',
+                'AISA33333333333333333',
+            },
+        )
+
 
         from ipaddr import IPNetwork
         self.assertEqual(
-            set(rpa.OBJECT_STORE['cidr'].keys()), 
-            set(['10.1.1.1/18', '172.16.11.11/32', '54.11.11.11/32',
-                 '10.2.2.2/18', '172.16.22.22/32', '54.22.22.22/32',
-                 '10.3.3.3/18', '172.16.33.33/32', '54.33.33.33/32']))
+            set(rpa.OBJECT_STORE['cidr'].keys()),
+            {
+                '10.1.1.1/18',
+                '172.16.11.11/32',
+                '54.11.11.11/32',
+                '10.2.2.2/18',
+                '172.16.22.22/32',
+                '54.22.22.22/32',
+                '10.3.3.3/18',
+                '172.16.33.33/32',
+                '54.33.33.33/32',
+            },
+        )
+
 
         self.assertEqual(
             set(rpa.OBJECT_STORE['vpc'].keys()),
-            set(['vpc-11111111', 'vpc-22222222', 'vpc-33333333']))
+            {'vpc-11111111', 'vpc-22222222', 'vpc-33333333'},
+        )
+
 
         self.assertEqual(
             set(rpa.OBJECT_STORE['vpce'].keys()),
-            set(['vpce-11111111', 'vpce-22222222', 'vpce-33333333']))
+            {'vpce-11111111', 'vpce-22222222', 'vpce-33333333'},
+        )
     
     def test_inspect_entity(self):
         rpa = ResourcePolicyAuditor(accounts=["012345678910"])
@@ -256,7 +304,7 @@ class ResourcePolicyTestCase(SecurityMonkeyTestCase):
         policy = Policy(policy01)
         for who in policy.whos_allowed():
             entity = Entity.from_tuple(who)
-            self.assertEqual(set(['SAME']), rpa.inspect_entity(entity, test_item))
+            self.assertEqual({'SAME'}, rpa.inspect_entity(entity, test_item))
 
         # All conditions are FRIENDLY account.
         policy02 = dict(
@@ -284,7 +332,7 @@ class ResourcePolicyTestCase(SecurityMonkeyTestCase):
         policy = Policy(policy02)
         for who in policy.whos_allowed():
             entity = Entity.from_tuple(who)
-            self.assertEqual(set(['FRIENDLY']), rpa.inspect_entity(entity, test_item))
+            self.assertEqual({'FRIENDLY'}, rpa.inspect_entity(entity, test_item))
 
         # All conditions are THIRDPARTY account.
         policy03 = dict(
@@ -312,7 +360,7 @@ class ResourcePolicyTestCase(SecurityMonkeyTestCase):
         policy = Policy(policy03)
         for who in policy.whos_allowed():
             entity = Entity.from_tuple(who)
-            self.assertEqual(set(['THIRDPARTY']), rpa.inspect_entity(entity, test_item))
+            self.assertEqual({'THIRDPARTY'}, rpa.inspect_entity(entity, test_item))
 
         # All conditions are from an UNKNOWN account.
         policy04 = dict(
@@ -340,7 +388,7 @@ class ResourcePolicyTestCase(SecurityMonkeyTestCase):
         policy = Policy(policy04)
         for who in policy.whos_allowed():
             entity = Entity.from_tuple(who)
-            self.assertEqual(set(['UNKNOWN']), rpa.inspect_entity(entity, test_item))
+            self.assertEqual({'UNKNOWN'}, rpa.inspect_entity(entity, test_item))
 
     def test_check_internet_accessible(self):
         rpa = ResourcePolicyAuditor(accounts=["012345678910"])

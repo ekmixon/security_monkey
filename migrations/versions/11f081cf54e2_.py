@@ -63,25 +63,26 @@ def upgrade():
 
     seen = {}
     for result in results:
-        if seen.get("{}-{}".format(result.account_id, result.name)):
+        if seen.get(f"{result.account_id}-{result.name}"):
             # We only want to keep the values that are not null -- if they exist:
             if result.value is None:
-                print("[+] Marking duplicate account custom field for account with ID: {},"
-                      " field name: {}, field Value: NULL for deletion".format(result.account_id, result.name))
+                print(
+                    f"[+] Marking duplicate account custom field for account with ID: {result.account_id}, field name: {result.name}, field Value: NULL for deletion"
+                )
+
                 delete_list.append(result)
 
             else:
                 # Replace the seen element with this one:
-                print("[+] Replacing OLD duplicate account custom field for account with ID: {},"
-                      " field name: {}, old field Value: {}, "
-                      "with new field value: {}".format(result.account_id, result.name,
-                                                        seen["{}-{}".format(result.account_id, result.name)].value,
-                                                        result.value))
-                delete_list.append(seen["{}-{}".format(result.account_id, result.name)])
-                seen["{}-{}".format(result.account_id, result.name)] = result
+                print(
+                    f'[+] Replacing OLD duplicate account custom field for account with ID: {result.account_id}, field name: {result.name}, old field Value: {seen[f"{result.account_id}-{result.name}"].value}, with new field value: {result.value}'
+                )
+
+                delete_list.append(seen[f"{result.account_id}-{result.name}"])
+                seen[f"{result.account_id}-{result.name}"] = result
 
         else:
-            seen["{}-{}".format(result.account_id, result.name)] = result
+            seen[f"{result.account_id}-{result.name}"] = result
 
     if delete_list:
         print("[-->] Deleting duplicate account custom fields... This may take a while...")

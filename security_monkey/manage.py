@@ -71,7 +71,10 @@ def run_change_reporter(accounts):
     try:
         account_names = _parse_accounts(accounts)
     except KeyError as e:
-        app.logger.error("The passed in account: {} does not exist in Security Monkey's database.".format(e.message))
+        app.logger.error(
+            f"The passed in account: {e.message} does not exist in Security Monkey's database."
+        )
+
         return -1
 
     manual_run_change_reporter(account_names)
@@ -85,7 +88,10 @@ def find_changes(accounts, monitors):
     try:
         account_names = _parse_accounts(accounts)
     except KeyError as e:
-        app.logger.error("The passed in account: {} does not exist in Security Monkey's database.".format(e.message))
+        app.logger.error(
+            f"The passed in account: {e.message} does not exist in Security Monkey's database."
+        )
+
         return -1
 
     manual_run_change_finder(account_names, monitor_names)
@@ -101,7 +107,10 @@ def audit_changes(accounts, monitors, send_report, skip_batch):
     try:
         account_names = _parse_accounts(accounts)
     except KeyError as e:
-        app.logger.error("The passed in account: {} does not exist in Security Monkey's database.".format(e.message))
+        app.logger.error(
+            f"The passed in account: {e.message} does not exist in Security Monkey's database."
+        )
+
         return -1
 
     sm_audit_changes(account_names, monitor_names, send_report, skip_batch=skip_batch)
@@ -115,7 +124,10 @@ def delete_unjustified_issues(accounts, monitors):
     try:
         _parse_accounts(accounts)
     except KeyError as e:
-        app.logger.error("The passed in account: {} does not exist in Security Monkey's database.".format(e.message))
+        app.logger.error(
+            f"The passed in account: {e.message} does not exist in Security Monkey's database."
+        )
+
         return -1
 
     issues = ItemAudit.query.filter_by(justified=False).all()
@@ -154,7 +166,10 @@ def backup_config_to_json(accounts, monitors, outputfolder):
     try:
         account_names = _parse_accounts(accounts)
     except KeyError as e:
-        app.logger.error("The passed in account: {} does not exist in Security Monkey's database.".format(e.message))
+        app.logger.error(
+            f"The passed in account: {e.message} does not exist in Security Monkey's database."
+        )
+
         return -1
 
     sm_backup_config_to_json(account_names, monitor_names, outputfolder)
@@ -310,7 +325,7 @@ def toggle_active_user(email, active):
         sys.exit(1)
 
     else:
-        sys.stdout.write("[+] Setting active toggle for user {} to {}\n".format(email, active))
+        sys.stdout.write(f"[+] Setting active toggle for user {email} to {active}\n")
         user = users.first()
 
         user.active = active
@@ -349,7 +364,10 @@ def disable_accounts(accounts):
     try:
         account_names = _parse_accounts(accounts)
     except KeyError as e:
-        app.logger.error("The passed in account: {} does not exist in Security Monkey's database.".format(e.message))
+        app.logger.error(
+            f"The passed in account: {e.message} does not exist in Security Monkey's database."
+        )
+
         return -1
 
     bulk_disable_accounts(account_names)
@@ -361,7 +379,10 @@ def enable_accounts(accounts):
     try:
         account_names = _parse_accounts(accounts)
     except KeyError as e:
-        app.logger.error("The passed in account: {} does not exist in Security Monkey's database.".format(e.message))
+        app.logger.error(
+            f"The passed in account: {e.message} does not exist in Security Monkey's database."
+        )
+
         return -1
 
     bulk_enable_accounts(account_names)
@@ -390,7 +411,7 @@ def add_override_score(tech_name, method, auditor, score, disabled, pattern_scor
     from security_monkey.auditor import auditor_registry
 
     if tech_name not in auditor_registry:
-        sys.stderr.write('Invalid tech name {}.\n'.format(tech_name))
+        sys.stderr.write(f'Invalid tech name {tech_name}.\n')
         sys.exit(1)
 
     valid = False
@@ -400,11 +421,11 @@ def add_override_score(tech_name, method, auditor, score, disabled, pattern_scor
             valid = True
             break
     if not valid:
-        sys.stderr.write('Invalid auditor {}.\n'.format(auditor))
+        sys.stderr.write(f'Invalid auditor {auditor}.\n')
         sys.exit(1)
 
     if not getattr(auditor_class, method, None):
-        sys.stderr.write('Invalid method {}.\n'.format(method))
+        sys.stderr.write(f'Invalid method {method}.\n')
         sys.exit(1)
 
     if score is None and not disabled:
@@ -442,7 +463,7 @@ def add_override_score(tech_name, method, auditor, score, disabled, pattern_scor
 
             from security_monkey.account_manager import account_registry
             if account_info[0] not in account_registry:
-                sys.stderr.write('Invalid account type {}\n'.format(account_info[0]))
+                sys.stderr.write(f'Invalid account type {account_info[0]}\n')
                 sys.exit(1)
 
             entry.add_or_update_pattern_score(account_info[0], account_info[1], account_info[2], int(left_right[1]))
@@ -504,23 +525,19 @@ def add_override_scores(file_name, field_mappings):
         str_score = row[mappings['score']].decode('ascii', 'ignore').strip('')
         if str_score != '':
             if not str_score.isdigit():
-                errors.append('Score {} line {} is not a positive int.'.format(str_score, line_num))
+                errors.append(f'Score {str_score} line {line_num} is not a positive int.')
                 continue
             score = int(str_score)
 
-        if row[mappings['disabled']].lower() == 'true':
-            disabled = True
-        else:
-            disabled = False
-
-        if score is None and not disabled:
-            continue
-
+        disabled = row[mappings['disabled']].lower() == 'true'
         if score is None:
+            if not disabled:
+                continue
+
             score = 0
 
         if tech_name not in auditor_registry:
-            errors.append('Invalid tech name {} line {}.'.format(tech_name, line_num))
+            errors.append(f'Invalid tech name {tech_name} line {line_num}.')
             continue
 
         valid = False
@@ -531,32 +548,40 @@ def add_override_scores(file_name, field_mappings):
                 break
 
         if not valid:
-            errors.append('Invalid auditor {} line {}.'.format(auditor, line_num))
+            errors.append(f'Invalid auditor {auditor} line {line_num}.')
             continue
 
         if not getattr(auditor_class, method, None):
-            errors.append('Invalid method {} line {}.'.format(method, line_num))
+            errors.append(f'Invalid method {method} line {line_num}.')
             continue
 
-        entry = ItemAuditScore(technology=tech_name, method=method + ' (' + auditor + ')',
-                               score=score, disabled=disabled)
+        entry = ItemAuditScore(
+            technology=tech_name,
+            method=f'{method} ({auditor})',
+            score=score,
+            disabled=disabled,
+        )
+
 
         pattern_mappings = mappings['patterns']
         for mapping in pattern_mappings:
             str_pattern_score = row[pattern_mappings[mapping]].decode('ascii', 'ignore').strip()
             if str_pattern_score != '':
                 if not str_pattern_score.isdigit():
-                    errors.append('Pattern score {} line {} is not a positive int.'.format(str_pattern_score, line_num))
+                    errors.append(
+                        f'Pattern score {str_pattern_score} line {line_num} is not a positive int.'
+                    )
+
                     continue
 
                 account_info = mapping.split('.')
                 if len(account_info) != 3:
-                    errors.append('Invalid pattern mapping {}.'.format(mapping))
+                    errors.append(f'Invalid pattern mapping {mapping}.')
                     continue
 
                 from security_monkey.account_manager import account_registry
                 if account_info[0] not in account_registry:
-                    errors.append('Invalid account type {}'.format(account_info[0]))
+                    errors.append(f'Invalid account type {account_info[0]}')
                     continue
 
                 db_pattern_score = AccountPatternAuditScore(account_type=account_info[0],
@@ -568,9 +593,9 @@ def add_override_scores(file_name, field_mappings):
 
         entries.append(entry)
 
-    if len(errors) > 0:
+    if errors:
         for error in errors:
-            sys.stderr.write("{}\n".format(error))
+            sys.stderr.write(f"{error}\n")
         sys.exit(1)
 
     AccountPatternAuditScore.query.delete()
@@ -584,10 +609,7 @@ def add_override_scores(file_name, field_mappings):
 
 
 def _parse_tech_names(tech_str):
-    if tech_str == 'all':
-        return watcher_registry.keys()
-    else:
-        return tech_str.split(',')
+    return watcher_registry.keys() if tech_str == 'all' else tech_str.split(',')
 
 
 def _parse_accounts(account_str, active=True):
@@ -621,16 +643,13 @@ def delete_account(name):
 
 @manager.option('-t', '--tech_name', dest='tech_name', type=str, required=True)
 @manager.option('-d', '--disabled', dest='disabled', type=bool, default=False)
-# We are locking down the allowed intervals here to 15 minutes, 1 hour, 12 hours, 24
-# hours or one week because too many different intervals could result in too many
-# scheduler threads, impacting performance.
 @manager.option('-i', '--interval', dest='interval', type=int, default=60, choices=[15, 60, 720, 1440, 10080])
 def add_watcher_config(tech_name, disabled, interval):
     from security_monkey.datastore import WatcherConfig
     from security_monkey.watcher import watcher_registry
 
     if tech_name not in watcher_registry:
-        sys.stderr.write('Invalid tech name {}.\n'.format(tech_name))
+        sys.stderr.write(f'Invalid tech name {tech_name}.\n')
         sys.exit(1)
 
     query = WatcherConfig.query.filter(WatcherConfig.index == tech_name)
@@ -675,7 +694,7 @@ def clean_stale_issues():
 
 class APIServer(Command):
     def __init__(self, host='127.0.0.1', port=app.config.get('API_PORT'), workers=12):
-        self.address = "{}:{}".format(host, port)
+        self.address = f"{host}:{port}"
         self.workers = workers
 
     def get_options(self):
@@ -765,10 +784,7 @@ def sync_swag(owner, bucket_name, bucket_prefix, bucket_region, account_type, sp
         thirdparty = account['owner'] != owner
         if spinnaker:
             spinnaker_name = swag.get_service_name('spinnaker', "[?id=='{id}']".format(id=account['id']))
-            if not spinnaker_name:
-                name = account['name']
-            else:
-                name = spinnaker_name
+            name = spinnaker_name or account['name']
         else:
             name = account['name']
 
@@ -776,14 +792,13 @@ def sync_swag(owner, bucket_name, bucket_prefix, bucket_region, account_type, sp
         identifier = account['id']
 
         custom_fields = {}
-        s3_name = swag.get_service_name('s3', "[?id=='{id}']".format(id=account['id']))
-        if s3_name:
+        if s3_name := swag.get_service_name(
+            's3', "[?id=='{id}']".format(id=identifier)
+        ):
             custom_fields['s3_name'] = s3_name
 
-        s3_service = services_by_name.get('s3', {})
-        if s3_service:
-            c_id = s3_service['metadata'].get('canonicalId', None)
-            if c_id:
+        if s3_service := services_by_name.get('s3', {}):
+            if c_id := s3_service['metadata'].get('canonicalId', None):
                 custom_fields['canonical_id'] = c_id
         role_name = secmonkey_service.get('metadata', {}).get('role_name', None)
         if role_name is not None:
@@ -816,7 +831,7 @@ def sync_networks(bucket_name, input_filename, authoritative):
     existing = NetworkWhitelistEntry.query.filter(
         NetworkWhitelistEntry.name.in_(networks)
     )
-    new = set(networks.keys()) - set(entry.name for entry in existing)
+    new = set(networks.keys()) - {entry.name for entry in existing}
     for entry in existing:
         entry.cidr = networks[entry.name]
         db.session.add(entry)
@@ -842,7 +857,7 @@ class AddAccount(Command):
     def __init__(self, account_manager, *args, **kwargs):
         super(AddAccount, self).__init__(*args, **kwargs)
         self._account_manager = account_manager
-        self.__doc__ = "Add %s account" % account_manager.account_type
+        self.__doc__ = f"Add {account_manager.account_type} account"
 
     def get_options(self):
         options = [
@@ -853,8 +868,11 @@ class AddAccount(Command):
             Option('--notes', type=text_type),
             Option('--update-existing', action="store_true")
         ]
-        for cf in self._account_manager.custom_field_configs:
-            options.append(Option('--%s' % cf.name, dest=cf.name, type=str))
+        options.extend(
+            Option(f'--{cf.name}', dest=cf.name, type=str)
+            for cf in self._account_manager.custom_field_configs
+        )
+
         return options
 
     def __call__(self, app, *args, **kwargs):
@@ -863,8 +881,7 @@ class AddAccount(Command):
         thirdparty = kwargs.pop('thirdparty', False)
         notes = kwargs.pop('notes', u'')
         identifier = kwargs.pop('identifier')
-        update = kwargs.pop('update_existing', False)
-        if update:
+        if update := kwargs.pop('update_existing', False):
             result = self._account_manager.update(None, self._account_manager.account_type, name, active, thirdparty,
                                                   notes, identifier,
                                                   custom_fields=kwargs
@@ -884,7 +901,10 @@ def main():
     from security_monkey.account_manager import account_registry
 
     for name, account_manager in account_registry.items():
-        manager.add_command("add_account_%s" % name.lower(), AddAccount(account_manager()))
+        manager.add_command(
+            f"add_account_{name.lower()}", AddAccount(account_manager())
+        )
+
     manager.add_command("run_api_server", APIServer())
     manager.run()
 

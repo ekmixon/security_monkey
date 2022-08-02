@@ -136,9 +136,12 @@ class ChangeFinderTestCase(SecurityMonkeyTestCase):
         manual_run_change_finder(['TEST_ACCOUNT1', 'TEST_ACCOUNT2'], ['index1', 'index2', 'index3'])
 
         watcher_keys = list(RUNTIME_WATCHERS.keys())
-        self.assertEqual(first=3, second=len(watcher_keys),
-                         msg="Should run 3 watchers but ran {}"
-                         .format(len(watcher_keys)))
+        self.assertEqual(
+            first=3,
+            second=len(watcher_keys),
+            msg=f"Should run 3 watchers but ran {len(watcher_keys)}",
+        )
+
 
         self.assertTrue('index1' in watcher_keys,
                         msg="Watcher index1 not run")
@@ -147,20 +150,32 @@ class ChangeFinderTestCase(SecurityMonkeyTestCase):
         self.assertTrue('index3' in watcher_keys,
                         msg="Watcher index3 not run")
 
-        self.assertEqual(first=2, second=len(RUNTIME_WATCHERS['index1']),
-                         msg="Watcher index1 should run twice but ran {} times"
-                         .format(len(RUNTIME_WATCHERS['index1'])))
-        self.assertEqual(first=2, second=len(RUNTIME_WATCHERS['index2']),
-                         msg="Watcher index2 should run twice but ran {} times"
-                         .format(len(RUNTIME_WATCHERS['index2'])))
-        self.assertEqual(first=2, second=len(RUNTIME_WATCHERS['index3']),
-                         msg="Watcher index2 should run twice but ran {} times"
-                         .format(len(RUNTIME_WATCHERS['index3'])))
+        self.assertEqual(
+            first=2,
+            second=len(RUNTIME_WATCHERS['index1']),
+            msg=f"Watcher index1 should run twice but ran {len(RUNTIME_WATCHERS['index1'])} times",
+        )
+
+        self.assertEqual(
+            first=2,
+            second=len(RUNTIME_WATCHERS['index2']),
+            msg=f"Watcher index2 should run twice but ran {len(RUNTIME_WATCHERS['index2'])} times",
+        )
+
+        self.assertEqual(
+            first=2,
+            second=len(RUNTIME_WATCHERS['index3']),
+            msg=f"Watcher index2 should run twice but ran {len(RUNTIME_WATCHERS['index3'])} times",
+        )
+
 
         auditor_keys = list(RUNTIME_AUDIT_COUNTS.keys())
-        self.assertEqual(first=3, second=len(auditor_keys),
-                         msg="Should run 3 auditors but ran {}"
-                         .format(len(auditor_keys)))
+        self.assertEqual(
+            first=3,
+            second=len(auditor_keys),
+            msg=f"Should run 3 auditors but ran {len(auditor_keys)}",
+        )
+
 
         self.assertTrue('index1' in auditor_keys,
                         msg="Auditor index1 not run")
@@ -169,15 +184,23 @@ class ChangeFinderTestCase(SecurityMonkeyTestCase):
         self.assertTrue('index3' in auditor_keys,
                         msg="Auditor index3 not run")
 
-        self.assertEqual(first=2, second=RUNTIME_AUDIT_COUNTS['index1'],
-                         msg="Auditor index1 should have audited 2 items but audited {}"
-                         .format(RUNTIME_AUDIT_COUNTS['index1']))
-        self.assertEqual(first=2, second=RUNTIME_AUDIT_COUNTS['index2'],
-                         msg="Auditor index2 should have audited 2 items but audited {}"
-                         .format(RUNTIME_AUDIT_COUNTS['index2']))
-        self.assertEqual(first=2, second=RUNTIME_AUDIT_COUNTS['index3'],
-                         msg="Auditor index3 should have audited 2 items but audited {}"
-                         .format(RUNTIME_AUDIT_COUNTS['index3']))
+        self.assertEqual(
+            first=2,
+            second=RUNTIME_AUDIT_COUNTS['index1'],
+            msg=f"Auditor index1 should have audited 2 items but audited {RUNTIME_AUDIT_COUNTS['index1']}",
+        )
+
+        self.assertEqual(
+            first=2,
+            second=RUNTIME_AUDIT_COUNTS['index2'],
+            msg=f"Auditor index2 should have audited 2 items but audited {RUNTIME_AUDIT_COUNTS['index2']}",
+        )
+
+        self.assertEqual(
+            first=2,
+            second=RUNTIME_AUDIT_COUNTS['index3'],
+            msg=f"Auditor index3 should have audited 2 items but audited {RUNTIME_AUDIT_COUNTS['index3']}",
+        )
 
     def test_find_account_changes(self):
         from security_monkey.task_scheduler.tasks import manual_run_change_finder, setup
@@ -186,9 +209,12 @@ class ChangeFinderTestCase(SecurityMonkeyTestCase):
         manual_run_change_finder(['TEST_ACCOUNT1'], ['index1', 'index2', 'index3'])
 
         watcher_keys = list(RUNTIME_WATCHERS.keys())
-        self.assertEqual(first=3, second=len(watcher_keys),
-                         msg="Should run 3 watchers but ran {}"
-                         .format(len(watcher_keys)))
+        self.assertEqual(
+            first=3,
+            second=len(watcher_keys),
+            msg=f"Should run 3 watchers but ran {len(watcher_keys)}",
+        )
+
 
         self.assertTrue('index1' in watcher_keys,
                         msg="Watcher index1 not run")
@@ -197,20 +223,32 @@ class ChangeFinderTestCase(SecurityMonkeyTestCase):
         self.assertTrue('index3' in watcher_keys,
                         msg="Watcher index3 not run")
 
-        self.assertEqual(first=1, second=len(RUNTIME_WATCHERS['index1']),
-                         msg="Watcher index1 should run once but ran {} times"
-                         .format(len(RUNTIME_WATCHERS['index1'])))
-        self.assertEqual(first=1, second=len(RUNTIME_WATCHERS['index2']),
-                         msg="Watcher index2 should run once but ran {} times"
-                         .format(len(RUNTIME_WATCHERS['index2'])))
-        self.assertEqual(first=1, second=len(RUNTIME_WATCHERS['index3']),
-                         msg="Watcher index2 should run once but ran {} times"
-                         .format(len(RUNTIME_WATCHERS['index3'])))
+        self.assertEqual(
+            first=1,
+            second=len(RUNTIME_WATCHERS['index1']),
+            msg=f"Watcher index1 should run once but ran {len(RUNTIME_WATCHERS['index1'])} times",
+        )
+
+        self.assertEqual(
+            first=1,
+            second=len(RUNTIME_WATCHERS['index2']),
+            msg=f"Watcher index2 should run once but ran {len(RUNTIME_WATCHERS['index2'])} times",
+        )
+
+        self.assertEqual(
+            first=1,
+            second=len(RUNTIME_WATCHERS['index3']),
+            msg=f"Watcher index2 should run once but ran {len(RUNTIME_WATCHERS['index3'])} times",
+        )
+
 
         auditor_keys = list(RUNTIME_AUDIT_COUNTS.keys())
-        self.assertEqual(first=3, second=len(auditor_keys),
-                         msg="Should run 3 auditors but ran {}"
-                         .format(len(auditor_keys)))
+        self.assertEqual(
+            first=3,
+            second=len(auditor_keys),
+            msg=f"Should run 3 auditors but ran {len(auditor_keys)}",
+        )
+
 
         self.assertTrue('index1' in auditor_keys,
                         msg="Auditor index1 not run")
@@ -219,12 +257,20 @@ class ChangeFinderTestCase(SecurityMonkeyTestCase):
         self.assertTrue('index3' in auditor_keys,
                         msg="Auditor index3 not run")
 
-        self.assertEqual(first=1, second=RUNTIME_AUDIT_COUNTS['index1'],
-                         msg="Auditor index1 should have audited 1 item but audited {}"
-                         .format(RUNTIME_AUDIT_COUNTS['index1']))
-        self.assertEqual(first=1, second=RUNTIME_AUDIT_COUNTS['index2'],
-                         msg="Auditor index2 should have audited 1 item but audited {}"
-                         .format(RUNTIME_AUDIT_COUNTS['index2']))
-        self.assertEqual(first=1, second=RUNTIME_AUDIT_COUNTS['index3'],
-                         msg="Auditor index3 should have audited 1 item but audited {}"
-                         .format(RUNTIME_AUDIT_COUNTS['index3']))
+        self.assertEqual(
+            first=1,
+            second=RUNTIME_AUDIT_COUNTS['index1'],
+            msg=f"Auditor index1 should have audited 1 item but audited {RUNTIME_AUDIT_COUNTS['index1']}",
+        )
+
+        self.assertEqual(
+            first=1,
+            second=RUNTIME_AUDIT_COUNTS['index2'],
+            msg=f"Auditor index2 should have audited 1 item but audited {RUNTIME_AUDIT_COUNTS['index2']}",
+        )
+
+        self.assertEqual(
+            first=1,
+            second=RUNTIME_AUDIT_COUNTS['index3'],
+            msg=f"Auditor index3 should have audited 1 item but audited {RUNTIME_AUDIT_COUNTS['index3']}",
+        )

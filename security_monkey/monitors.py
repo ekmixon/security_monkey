@@ -54,12 +54,7 @@ def get_monitors_and_dependencies(account, monitor_names, debug=False):
     """
     monitors = all_monitors(account, debug)
     monitor_names = _find_dependent_monitors(monitors, monitor_names)
-    requested_mons = []
-    for mon in monitors:
-        if mon.watcher.index in monitor_names:
-            requested_mons.append(mon)
-
-    return requested_mons
+    return [mon for mon in monitors if mon.watcher.index in monitor_names]
 
 
 def all_monitors(account_name, debug=False):
@@ -82,8 +77,11 @@ def all_monitors(account_name, debug=False):
             path = [mon.watcher.index]
             _set_dependency_hierarchies(monitor_dict, mon, path, mon.audit_tier + 1)
 
-    monitors = sorted(list(monitor_dict.values()), key=lambda item: item.audit_tier, reverse=True)
-    return monitors
+    return sorted(
+        list(monitor_dict.values()),
+        key=lambda item: item.audit_tier,
+        reverse=True,
+    )
 
 
 def _set_dependency_hierarchies(monitor_dict, monitor, path, level):
@@ -97,11 +95,11 @@ def _set_dependency_hierarchies(monitor_dict, monitor, path, level):
         if support_index in path:
             auditor_flow = ''
             for index in current_path:
-                auditor_flow = auditor_flow + '->' + index
+                auditor_flow = f'{auditor_flow}->{index}'
             raise Exception('Detected circular dependency in support auditor', auditor_flow)
 
         support_mon = monitor_dict.get(support_index)
-        if support_mon == None:
+        if support_mon is None:
             app.logger.warn("Monitor {0} depends on monitor {1}, but {1} is unavailable"
                                     .format(monitor.watcher.index, support_index))
         else:

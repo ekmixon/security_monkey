@@ -22,13 +22,7 @@ def env_to_bool(input):
         Must change String from environment variable into Boolean
         defaults to True
     """
-    if isinstance(input, str):
-        if input in ('False', 'false'):
-            return False
-        else:
-            return True
-    else:
-        return input
+    return input not in ('False', 'false') if isinstance(input, str) else input
 
 
 LOG_CFG = {
@@ -70,13 +64,8 @@ LOG_CFG = {
     }
 }
 
-SQLALCHEMY_DATABASE_URI = 'postgresql://%s:%s@%s:%s/%s' % (
-    os.getenv('SECURITY_MONKEY_POSTGRES_USER', 'postgres'),
-    os.getenv('SECURITY_MONKEY_POSTGRES_PASSWORD', 'securitymonkeypassword'),
-    os.getenv('SECURITY_MONKEY_POSTGRES_HOST', 'localhost'),
-    os.getenv('SECURITY_MONKEY_POSTGRES_PORT', 5432),
-    os.getenv('SECURITY_MONKEY_POSTGRES_DATABASE', 'secmonkey')
-)
+SQLALCHEMY_DATABASE_URI = f"postgresql://{os.getenv('SECURITY_MONKEY_POSTGRES_USER', 'postgres')}:{os.getenv('SECURITY_MONKEY_POSTGRES_PASSWORD', 'securitymonkeypassword')}@{os.getenv('SECURITY_MONKEY_POSTGRES_HOST', 'localhost')}:{os.getenv('SECURITY_MONKEY_POSTGRES_PORT', 5432)}/{os.getenv('SECURITY_MONKEY_POSTGRES_DATABASE', 'secmonkey')}"
+
 
 ENVIRONMENT = 'ec2'
 USE_ROUTE53 = False
@@ -86,7 +75,7 @@ WEB_PORT = '443'
 WEB_PATH = '/static/ui.html'
 FRONTED_BY_NGINX = True
 NGINX_PORT = '443'
-BASE_URL = 'https://{}/'.format(FQDN)
+BASE_URL = f'https://{FQDN}/'
 
 SECRET_KEY = os.getenv('SECURITY_MONKEY_SECRET_KEY', '<INSERT_RANDOM_STRING_HERE>')
 
@@ -169,15 +158,16 @@ ONELOGIN_EMAIL_FIELD = os.getenv('SECURITY_MONKEY_ONELOGIN_EMAIL_FIELD', 'User.e
 ONELOGIN_DEFAULT_ROLE = 'View'  # Default RBAC when user doesn't already exist
 ONELOGIN_HTTPS = True  # If using HTTPS strict mode will check the requests are HTTPS
 ONELOGIN_IDP_CERT = os.getenv('SECURITY_MONKEY_ONELOGIN_IDP_CERT', '<IDP_CERT>')
-ONELOGIN_USE_CUSTOM = os.getenv('SECURITY_MONKEY_ONELOGIN_USE_CUSTOM', False)
-if not ONELOGIN_USE_CUSTOM:
-    ONELOGIN_ENTITY_ID = "https://app.onelogin.com/saml/metadata/{APP_ID}".format(APP_ID=ONELOGIN_APP_ID)
-    ONELOGIN_SSO_URL = "https://app.onelogin.com/trust/saml2/http-post/sso/{APP_ID}".format(APP_ID=ONELOGIN_APP_ID)
-    ONELOGIN_SLO_URL = "https://app.onelogin.com/trust/saml2/http-redirect/slo/{APP_ID}".format(APP_ID=ONELOGIN_APP_ID)
-else:
+if ONELOGIN_USE_CUSTOM := os.getenv(
+    'SECURITY_MONKEY_ONELOGIN_USE_CUSTOM', False
+):
     ONELOGIN_ENTITY_ID = os.getenv('SECURITY_MONKEY_ONELOGIN_ENTITY_ID')
     ONELOGIN_SSO_URL = os.getenv('SECURITY_MONKEY_ONELOGIN_SSO_URL')
     ONELOGIN_SLO_URL = os.getenv('SECURITY_MONKEY_ONELOGIN_SLO_URL')
+else:
+    ONELOGIN_ENTITY_ID = "https://app.onelogin.com/saml/metadata/{APP_ID}".format(APP_ID=ONELOGIN_APP_ID)
+    ONELOGIN_SSO_URL = "https://app.onelogin.com/trust/saml2/http-post/sso/{APP_ID}".format(APP_ID=ONELOGIN_APP_ID)
+    ONELOGIN_SLO_URL = "https://app.onelogin.com/trust/saml2/http-redirect/slo/{APP_ID}".format(APP_ID=ONELOGIN_APP_ID)
 ONELOGIN_SETTINGS = {
     # If strict is True, then the Python Toolkit will reject unsigned
     # or unencrypted messages if it expects them to be signed or encrypted.

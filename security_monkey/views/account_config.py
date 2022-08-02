@@ -72,44 +72,47 @@ class AccountConfigGet(AuthenticatedService):
             :statuscode 401: Authentication failure. Please login.
         """
         load_all_account_types()
-        marshaled = {}
         account_types = AccountType.query.all()
         configs_marshaled = {}
 
         for account_type in account_types:
             acc_manager = account_registry.get(account_type.name)
             if acc_manager is not None:
-                values = {}
-                values['identifier_label'] = acc_manager.identifier_label
-                values['identifier_tool_tip'] = acc_manager.identifier_tool_tip
+                values = {
+                    'identifier_label': acc_manager.identifier_label,
+                    'identifier_tool_tip': acc_manager.identifier_tool_tip,
+                }
+
                 fields = []
 
                 if account_fields == 'all':
-                    fields.append({ 'name': 'identifier',
-                                    'label': '',
-                                    'editable': True,
-                                    'tool_tip': '',
-                                    'password': False,
-                                    'allowed_values': None
-                                  }
-                    )
-
-                    fields.append({ 'name': 'name',
-                                    'label': '',
-                                    'editable': True,
-                                    'tool_tip': '',
-                                    'password': False,
-                                    'allowed_values': None
-                                  }
-                    )
-
-                    fields.append({ 'name': 'notes',
-                                    'label': '',
-                                    'editable': True,
-                                    'tool_tip': '',
-                                    'password': False,
-                                    'allowed_values': None
-                                  }
+                    fields.extend(
+                        (
+                            {
+                                'name': 'identifier',
+                                'label': '',
+                                'editable': True,
+                                'tool_tip': '',
+                                'password': False,
+                                'allowed_values': None,
+                            },
+                            {
+                                'name': 'name',
+                                'label': '',
+                                'editable': True,
+                                'tool_tip': '',
+                                'password': False,
+                                'allowed_values': None,
+                            },
+                            {
+                                'name': 'notes',
+                                'label': '',
+                                'editable': True,
+                                'tool_tip': '',
+                                'password': False,
+                                'allowed_values': None,
+                            },
+                        )
                     )
 
                 for config in acc_manager.custom_field_configs:
@@ -127,7 +130,5 @@ class AccountConfigGet(AuthenticatedService):
                     values['fields'] = fields
                 configs_marshaled[account_type.name] = values
 
-        marshaled['custom_configs'] = configs_marshaled
-        marshaled['auth'] = self.auth_dict
-
+        marshaled = {'custom_configs': configs_marshaled, 'auth': self.auth_dict}
         return marshaled, 200

@@ -247,20 +247,20 @@ class AccountPatternAuditScoreGetPutDelete(AuthenticatedService):
             :statuscode 401: Authentication failure. Please login.
         """
 
-        app.logger.info('ID: ' + str(id))
+        app.logger.info(f'ID: {str(id)}')
 
         result = AccountPatternAuditScore.query.filter(
             AccountPatternAuditScore.id == id).first()
         if not result:
             return {"status": "Override Account Pattern Audit Score with the given ID not found."}, 404
 
-        app.logger.info('RESULT DICT: ' + str(result.__dict__))
+        app.logger.info(f'RESULT DICT: {str(result.__dict__)}')
 
         accountpatternauditscore_marshaled = marshal(
             result.__dict__, ACCOUNT_PATTERN_AUDIT_SCORE_FIELDS)
         accountpatternauditscore_marshaled['auth'] = self.auth_dict
 
-        app.logger.info('RETURN: ' + str(accountpatternauditscore_marshaled))
+        app.logger.info(f'RETURN: {str(accountpatternauditscore_marshaled)}')
 
         return accountpatternauditscore_marshaled, 200
 

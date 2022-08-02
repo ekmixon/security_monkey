@@ -20,6 +20,7 @@
 
 
 """
+
 import datetime
 from datetime import timedelta
 import json
@@ -53,19 +54,14 @@ ACTIVE_CONF = {
     "region": "universal",
     "name": "SomeRole",
     "policy": {
-        "Statement": [
-            {
-                "Effect": "Deny",
-                "Action": "*",
-                "Resource": "*"
-            }
-        ]
+        "Statement": [{"Effect": "Deny", "Action": "*", "Resource": "*"}]
     },
-    "Arn": ARN_PREFIX + ":iam::012345678910:role/SomeRole"
+    "Arn": f"{ARN_PREFIX}:iam::012345678910:role/SomeRole",
 }
 
+
 ASPD = {
-    "Arn": ARN_PREFIX + ":iam::012345678910:role/SomeRole",
+    "Arn": f"{ARN_PREFIX}:iam::012345678910:role/SomeRole",
     "Path": "/",
     "RoleId": "a2wdg1234x12ih4maj4mv",
     "RoleName": "SomeRole",
@@ -75,12 +71,10 @@ ASPD = {
             {
                 "Effect": "Allow",
                 "Action": "sts:AssumeRole",
-                "Principal": {
-                    "Service": "ec2.amazonaws.com"
-                }
+                "Principal": {"Service": "ec2.amazonaws.com"},
             }
         ]
-    }
+    },
 }
 
 
@@ -396,10 +390,10 @@ class WatcherTestCase(SecurityMonkeyTestCase):
         watcher.technology = self.technology
 
         items = []
-        for x in range(0, 5):
+        for x in range(5):
             mod_conf = dict(ACTIVE_CONF)
-            mod_conf["name"] = "SomeRole{}".format(x)
-            mod_conf["Arn"] = "arn:aws:iam::012345678910:role/SomeRole{}".format(x)
+            mod_conf["name"] = f"SomeRole{x}"
+            mod_conf["Arn"] = f"arn:aws:iam::012345678910:role/SomeRole{x}"
 
             items.append(SomeTestItem().from_slurp(mod_conf, account_name=self.account.name))
 
@@ -433,15 +427,15 @@ class WatcherTestCase(SecurityMonkeyTestCase):
         watcher.technology = self.technology
 
         items = []
-        for x in range(0, 5):
+        for x in range(5):
             mod_conf = dict(ACTIVE_CONF)
-            mod_conf["name"] = "SomeRole{}".format(x)
-            mod_conf["Arn"] = ARN_PREFIX + ":iam::012345678910:role/SomeRole{}".format(x)
+            mod_conf["name"] = f"SomeRole{x}"
+            mod_conf["Arn"] = ARN_PREFIX + f":iam::012345678910:role/SomeRole{x}"
             items.append(SomeTestItem().from_slurp(mod_conf, account_name=self.account.name))
 
             mod_aspd = dict(ASPD)
-            mod_aspd["Arn"] = ARN_PREFIX + ":iam::012345678910:role/SomeRole{}".format(x)
-            mod_aspd["RoleName"] = "SomeRole{}".format(x)
+            mod_aspd["Arn"] = ARN_PREFIX + f":iam::012345678910:role/SomeRole{x}"
+            mod_aspd["RoleName"] = f"SomeRole{x}"
             watcher.total_list.append(mod_aspd)
 
         watcher.find_changes(items)
@@ -451,10 +445,17 @@ class WatcherTestCase(SecurityMonkeyTestCase):
         assert len(watcher.deleted_items) == 0
 
         # Check that nothing was deleted:
-        for x in range(0, 5):
-            item_revision = ItemRevision.query.join((Item, ItemRevision.id == Item.latest_revision_id)).filter(
-                Item.arn == ARN_PREFIX + ":iam::012345678910:role/SomeRole{}".format(x),
-            ).one()
+        for x in range(5):
+            item_revision = (
+                ItemRevision.query.join(
+                    (Item, ItemRevision.id == Item.latest_revision_id)
+                )
+                .filter(
+                    Item.arn == ARN_PREFIX + f":iam::012345678910:role/SomeRole{x}"
+                )
+                .one()
+            )
+
 
             assert item_revision.active
 
@@ -469,8 +470,7 @@ class WatcherTestCase(SecurityMonkeyTestCase):
         assert len(ItemAudit.query.all()) == len(items) * 2
 
         # Remove the last two items:
-        removed_arns = []
-        removed_arns.append(watcher.total_list.pop()["Arn"])
+        removed_arns = [watcher.total_list.pop()["Arn"]]
         removed_arns.append(watcher.total_list.pop()["Arn"])
 
         # Check for deleted items again:

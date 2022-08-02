@@ -49,13 +49,15 @@ def remove_duplicate_issue_items():
 
     seen = {}
     for result in results:
-        if seen.get("{}-{}".format(result.sub_item_id, result.super_issue_id)):
-            print("[-] Duplicate item association marked for deletion: {} - {}"
-                  .format(result.sub_item_id, result.super_issue_id))
+        if seen.get(f"{result.sub_item_id}-{result.super_issue_id}"):
+            print(
+                f"[-] Duplicate item association marked for deletion: {result.sub_item_id} - {result.super_issue_id}"
+            )
+
             session.delete(result)
 
         else:
-            seen["{}-{}".format(result.sub_item_id, result.super_issue_id)] = True
+            seen[f"{result.sub_item_id}-{result.super_issue_id}"] = True
 
     print("[-->] Deleting duplicate item associations...")
     session.commit()
@@ -71,13 +73,15 @@ def remove_duplicate_association():
 
     seen = {}
     for result in results:
-        if seen.get("{}-{}".format(result.user_id, result.account_id)):
-            print("[-] Duplicate association marked for deletion: {} - {}"
-                  .format(result.user_id, result.account_id))
+        if seen.get(f"{result.user_id}-{result.account_id}"):
+            print(
+                f"[-] Duplicate association marked for deletion: {result.user_id} - {result.account_id}"
+            )
+
             session.delete(result)
 
         else:
-            seen["{}-{}".format(result.user_id, result.account_id)] = True
+            seen[f"{result.user_id}-{result.account_id}"] = True
 
     print("[-->] Deleting duplicate associations...")
     session.commit()
@@ -93,13 +97,15 @@ def remove_duplicate_role_users():
 
     seen = {}
     for result in results:
-        if seen.get("{}-{}".format(result.user_id, result.role_id)):
-            print("[-] Duplicate roles_users marked for deletion: {} - {}"
-                  .format(result.user_id, result.role_id))
+        if seen.get(f"{result.user_id}-{result.role_id}"):
+            print(
+                f"[-] Duplicate roles_users marked for deletion: {result.user_id} - {result.role_id}"
+            )
+
             session.delete(result)
 
         else:
-            seen["{}-{}".format(result.user_id, result.role_id)] = True
+            seen[f"{result.user_id}-{result.role_id}"] = True
 
     print("[-->] Deleting duplicate roles_users...")
     session.commit()

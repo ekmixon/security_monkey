@@ -42,60 +42,84 @@ class ManagedPolicyAuditorTestCase(SecurityMonkeyTestCase):
 
         config = {
             'policy': json.loads(FULL_ADMIN_POLICY_BARE),
-            'arn': ARN_PREFIX + ':iam::123456789:policy/TEST',
+            'arn': f'{ARN_PREFIX}:iam::123456789:policy/TEST',
             'attached_users': [],
             'attached_roles': [],
-            'attached_groups': []
+            'attached_groups': [],
         }
+
 
         auditor = ManagedPolicyAuditor(accounts=['unittest'])
         policyobj = ManagedPolicyItem(account="TEST_ACCOUNT", name="policy_test", config=config)
 
-        self.assertIs(len(policyobj.audit_issues), 0,
-                      "Managed Policy should have 0 alert but has {}".format(len(policyobj.audit_issues)))
+        self.assertIs(
+            len(policyobj.audit_issues),
+            0,
+            f"Managed Policy should have 0 alert but has {len(policyobj.audit_issues)}",
+        )
+
 
         auditor.check_star_privileges(policyobj)
-        self.assertIs(len(policyobj.audit_issues), 1,
-                      "Managed Policy should have 1 alert but has {}".format(len(policyobj.audit_issues)))
+        self.assertIs(
+            len(policyobj.audit_issues),
+            1,
+            f"Managed Policy should have 1 alert but has {len(policyobj.audit_issues)}",
+        )
 
     def test_issue_on_aws_policy_no_attachments(self):
         import json
 
         config = {
             'policy': json.loads(FULL_ADMIN_POLICY_BARE),
-            'arn': ARN_PREFIX + ':iam::aws:policy/TEST',
+            'arn': f'{ARN_PREFIX}:iam::aws:policy/TEST',
             'attached_users': [],
             'attached_roles': [],
-            'attached_groups': []
+            'attached_groups': [],
         }
+
 
         auditor = ManagedPolicyAuditor(accounts=['unittest'])
         policyobj = ManagedPolicyItem(account="TEST_ACCOUNT", name="policy_test", config=config)
 
-        self.assertIs(len(policyobj.audit_issues), 0,
-                      "Managed Policy should have 0 alert but has {}".format(len(policyobj.audit_issues)))
+        self.assertIs(
+            len(policyobj.audit_issues),
+            0,
+            f"Managed Policy should have 0 alert but has {len(policyobj.audit_issues)}",
+        )
+
 
         auditor.check_star_privileges(policyobj)
-        self.assertIs(len(policyobj.audit_issues), 0,
-                      "Managed Policy should have 0 alerts but has {}".format(len(policyobj.audit_issues)))
+        self.assertIs(
+            len(policyobj.audit_issues),
+            0,
+            f"Managed Policy should have 0 alerts but has {len(policyobj.audit_issues)}",
+        )
 
     def test_issue_on_aws_policy_with_attachment(self):
         import json
 
         config = {
             'policy': json.loads(FULL_ADMIN_POLICY_BARE),
-            'arn': ARN_PREFIX + ':iam::aws:policy/TEST',
+            'arn': f'{ARN_PREFIX}:iam::aws:policy/TEST',
             'attached_users': [],
-            'attached_roles': [ARN_PREFIX + ':iam::123456789:role/TEST'],
-            'attached_groups': []
+            'attached_roles': [f'{ARN_PREFIX}:iam::123456789:role/TEST'],
+            'attached_groups': [],
         }
+
 
         auditor = ManagedPolicyAuditor(accounts=['unittest'])
         policyobj = ManagedPolicyItem(account="TEST_ACCOUNT", name="policy_test", config=config)
 
-        self.assertIs(len(policyobj.audit_issues), 0,
-                      "Managed Policy should have 0 alert but has {}".format(len(policyobj.audit_issues)))
+        self.assertIs(
+            len(policyobj.audit_issues),
+            0,
+            f"Managed Policy should have 0 alert but has {len(policyobj.audit_issues)}",
+        )
+
 
         auditor.check_star_privileges(policyobj)
-        self.assertIs(len(policyobj.audit_issues), 1,
-                      "Managed Policy should have 1 alert but has {}".format(len(policyobj.audit_issues)))
+        self.assertIs(
+            len(policyobj.audit_issues),
+            1,
+            f"Managed Policy should have 1 alert but has {len(policyobj.audit_issues)}",
+        )

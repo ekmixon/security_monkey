@@ -117,30 +117,38 @@ class Entity:
         return Entity(category=entity_tuple.category, value=entity_tuple.value)
 
     def __str__(self):
-        strval = ''
-        if self.account_name or self.account_identifier:
-            strval = 'Account: [{identifier}/{account_name}] '.format(identifier=self.account_identifier, account_name=self.account_name)
-        strval += 'Entity: [{category}:{value}]'.format(category=self.category, value=self.value)
-        return strval
+        return (
+            'Account: [{identifier}/{account_name}] '.format(
+                identifier=self.account_identifier, account_name=self.account_name
+            )
+            if self.account_name or self.account_identifier
+            else ''
+        ) + 'Entity: [{category}:{value}]'.format(
+            category=self.category, value=self.value
+        )
 
     def __repr__(self):
         return self.__str__()
 
 class AuditorType(type):
-    def __init__(cls, name, bases, attrs):
-        super(AuditorType, cls).__init__(name, bases, attrs)
-        if cls.__name__ != 'Auditor' and cls.index:
+    def __init__(self, name, bases, attrs):
+        super(AuditorType, self).__init__(name, bases, attrs)
+        if self.__name__ != 'Auditor' and self.index:
             # Only want to register auditors explicitly loaded by find_modules or entry points
             plugin_names = [x.name for x in pkg_resources.iter_entry_points('security_monkey.plugins')]
-            if not '.' in cls.__module__ or cls.__module__ in plugin_names: 
-                found = False
-                for auditor in auditor_registry[cls.index]:
-                    if auditor.__module__ == cls.__module__ and auditor.__name__ == cls.__name__:
-                        found = True
-                        break
+            if '.' not in self.__module__ or self.__module__ in plugin_names: 
+                found = any(
+                    auditor.__module__ == self.__module__
+                    and auditor.__name__ == self.__name__
+                    for auditor in auditor_registry[self.index]
+                )
+
                 if not found:
-                    app.logger.debug("Registering auditor {} {}.{}".format(cls.index, cls.__module__, cls.__name__))
-                    auditor_registry[cls.index].append(cls)
+                    app.logger.debug(
+                        f"Registering auditor {self.index} {self.__module__}.{self.__name__}"
+                    )
+
+                    auditor_registry[self.index].append(self)
 
 
 def add(to, key, value):
@@ -149,7 +157,7 @@ def add(to, key, value):
     if key in to:
         to[key].add(value)
     else:
-        to[key] = set([value])
+        to[key] = {value}
 
 
 class Auditor(object, metaclass=AuditorType):
@@ -209,7 +217,7 @@ class Auditor(object, metaclass=AuditorType):
         from dpath.exceptions import PathNotFound
         from policyuniverse.policy import Policy
 
-        policies = list()
+        policies = []
         for key in policy_keys:
             try:
                 policy = dpath.util.values(item.config, key, separator='$')
@@ -241,9 +249,9 @@ class Auditor(object, metaclass=AuditorType):
         if not match:
             return False
 
-        direction = match.group(1)
-        protocol = match.group(2)
-        port = match.group(3)
+        direction = match[1]
+        protocol = match[2]
+        port = match[3]
 
         listener_ports = protocol_and_ports.get(protocol.upper(), [])
 
@@ -259,17 +267,16 @@ class Auditor(object, metaclass=AuditorType):
             # Would also produce funky results for RDS, ES, etc.
             return False
 
-        match = re.search(r'(-?\d+)-(-?\d+)', port)
-        if match:
-            from_port = int(match.group(1))
-            to_port = int(match.group(2))
+        if match := re.search(r'(-?\d+)-(-?\d+)', port):
+            from_port = int(match[1])
+            to_port = int(match[2])
         else:
             from_port = to_port = int(port)
 
-        for listener_port in listener_ports:
-            if int(listener_port) >= from_port and int(listener_port) <= to_port:
-                return True
-        return False
+        return any(
+            int(listener_port) >= from_port and int(listener_port) <= to_port
+            for listener_port in listener_ports
+        )
 
     @classmethod
     def _load_object_store(cls):
@@ -325,7 +332,7 @@ class Auditor(object, metaclass=AuditorType):
         Return:
             `None`.  Mutates the cls.OBJECT_STORE['cidr'] datastructure.
         """
-        if not 'cidr' in cls.OBJECT_STORE:
+        if 'cidr' not in cls.OBJECT_STORE:
             return
 
         # step 1
@@ -400,18 +407,12 @@ class Auditor(object, metaclass=AuditorType):
         role_results = cls._load_related_items('iamrole')
 
         for item in user_results:
-            fixed_item = ensure_item_has_latest_revision_id(item)
-            if not fixed_item:
-                continue
-
-            add(cls.OBJECT_STORE['userid'], fixed_item.latest_config.get('UserId'), fixed_item.account.identifier)
+            if fixed_item := ensure_item_has_latest_revision_id(item):
+                add(cls.OBJECT_STORE['userid'], fixed_item.latest_config.get('UserId'), fixed_item.account.identifier)
 
         for item in role_results:
-            fixed_item = ensure_item_has_latest_revision_id(item)
-            if not fixed_item:
-                continue
-
-            add(cls.OBJECT_STORE['userid'], fixed_item.latest_config.get('RoleId'), fixed_item.account.identifier)
+            if fixed_item := ensure_item_has_latest_revision_id(item):
+                add(cls.OBJECT_STORE['userid'], fixed_item.latest_config.get('RoleId'), fixed_item.account.identifier)
 
     @classmethod
     def _load_accounts(cls):
@@ -419,7 +420,7 @@ class Auditor(object, metaclass=AuditorType):
         friendly_accounts = Account.query.filter(Account.third_party == False).all()
         third_party = Account.query.filter(Account.third_party == True).all()
 
-        cls.OBJECT_STORE['ACCOUNTS']['DESCRIPTIONS'] = list()
+        cls.OBJECT_STORE['ACCOUNTS']['DESCRIPTIONS'] = []
         cls.OBJECT_STORE['ACCOUNTS']['FRIENDLY'] = set()
         cls.OBJECT_STORE['ACCOUNTS']['THIRDPARTY'] = set()
 
@@ -478,12 +479,11 @@ class Auditor(object, metaclass=AuditorType):
         if entity.category in ['arn', 'principal']:
             return self.inspect_entity_arn(entity, same, item)
         if entity.category == 'account':
-            return set([self.inspect_entity_account(entity, entity.value, same)])
+            return {self.inspect_entity_account(entity, entity.value, same)}
         if entity.category == 'security_group':
             account_identifier = entity.value.split('/')[0]
             entity.value = entity.value.split('/')[1]
-            result_set = set([self.inspect_entity_account(entity, account_identifier, same)])
-            return result_set
+            return {self.inspect_entity_account(entity, account_identifier, same)}
         if entity.category == 'userid':
             return self.inspect_entity_userid(entity, same)
         if entity.category == 'cidr':
@@ -498,7 +498,7 @@ class Auditor(object, metaclass=AuditorType):
     def inspect_entity_arn(self, entity, same, item):
         arn_input = entity.value
         if arn_input == '*':
-            return set(['UNKNOWN'])
+            return {'UNKNOWN'}
 
         arn = ARN(arn_input)
         if arn.error:
@@ -507,7 +507,7 @@ class Auditor(object, metaclass=AuditorType):
         if arn.tech == 's3':
             return self.inspect_entity_s3(entity, arn.name, same)
 
-        return set([self.inspect_entity_account(entity, arn.account_number, same)])
+        return {self.inspect_entity_account(entity, arn.account_number, same)}
 
     def inspect_entity_account(self, entity, account_number, same):
 
@@ -546,17 +546,16 @@ class Auditor(object, metaclass=AuditorType):
             if ipaddr.IPNetwork(entity.value) in ipaddr.IPNetwork(str_cidr):
                 for account in self.OBJECT_STORE['cidr'].get(str_cidr, []):
                     values.add(self.inspect_entity_account(entity, account, same))
-        if not values:
-            return set(['UNKNOWN'])
-        return values
+        return values or {'UNKNOWN'}
 
     def inspect_entity_generic(self, key, entity, item, same):
         if item in self.OBJECT_STORE.get(key, []):
-            values = set()
-            for account in self.OBJECT_STORE[key].get(item, []):
-                values.add(self.inspect_entity_account(entity, account, same))
-            return values
-        return set(['UNKNOWN'])
+            return {
+                self.inspect_entity_account(entity, account, same)
+                for account in self.OBJECT_STORE[key].get(item, [])
+            }
+
+        return {'UNKNOWN'}
 
     def record_internet_access(self, item, entity, actions, score=10, source='resource_policy'):
         tag = Categories.INTERNET_ACCESSIBLE
@@ -569,8 +568,11 @@ class Auditor(object, metaclass=AuditorType):
 
         action_instructions = None
         if source == 'resource_policy':
-            action_instructions = "An {singular} ".format(singular=self.i_am_singular)
-            action_instructions += "with { 'Principal': { 'AWS': '*' } } must also have a strong condition block or it is Internet Accessible. "
+            action_instructions = (
+                "An {singular} ".format(singular=self.i_am_singular)
+                + "with { 'Principal': { 'AWS': '*' } } must also have a strong condition block or it is Internet Accessible. "
+            )
+
         self.add_issue(score, tag, item, notes=notes, action_instructions=action_instructions)
 
     def record_friendly_access(self, item, entity, actions, score=0, source=None):
@@ -624,7 +626,7 @@ class Auditor(object, metaclass=AuditorType):
         """
 
         if notes and len(notes) > 1024:
-            notes = notes[0:1024]
+            notes = notes[:1024]
 
         if not self.override_scores:
             query = ItemAuditScore.query.filter(ItemAuditScore.technology == self.index)
@@ -634,16 +636,21 @@ class Auditor(object, metaclass=AuditorType):
         score = self._check_for_override_score(score, item.account)
 
         for existing_issue in item.audit_issues:
-            if existing_issue.issue == issue:
-                if existing_issue.notes == notes:
-                    if existing_issue.score == score:
-                        app.logger.debug(
-                            "Not adding issue because it was already found:{}/{}/{}/{}\n\t{} -- {}"
-                            .format(item.index, item.region, item.account, item.name, issue, notes))
-                        return existing_issue
+            if (
+                existing_issue.issue == issue
+                and existing_issue.notes == notes
+                and existing_issue.score == score
+            ):
+                app.logger.debug(
+                    f"Not adding issue because it was already found:{item.index}/{item.region}/{item.account}/{item.name}\n\t{issue} -- {notes}"
+                )
 
-        app.logger.debug("Adding issue: {}/{}/{}/{}\n\t{} -- {}"
-                         .format(item.index, item.region, item.account, item.name, issue, notes))
+                return existing_issue
+
+        app.logger.debug(
+            f"Adding issue: {item.index}/{item.region}/{item.account}/{item.name}\n\t{issue} -- {notes}"
+        )
+
         new_issue = datastore.ItemAudit(score=score,
                                         issue=issue,
                                         notes=notes,
@@ -666,14 +673,14 @@ class Auditor(object, metaclass=AuditorType):
         """
         Inspect all of the auditor's items.
         """
-        app.logger.debug("Asked to audit {} Objects".format(len(self.items)))
+        app.logger.debug(f"Asked to audit {len(self.items)} Objects")
         self.prep_for_audit()
         self.current_support_items = {}
         query = ItemAuditScore.query.filter(ItemAuditScore.technology == self.index)
         self.override_scores = query.all()
 
         methods = [getattr(self, method_name) for method_name in dir(self) if method_name.find("check_") == 0]
-        app.logger.debug("methods: {}".format(methods))
+        app.logger.debug(f"methods: {methods}")
         for item in self.items:
             for method in methods:
                 self.current_method_name = method.__name__
@@ -689,11 +696,15 @@ class Auditor(object, metaclass=AuditorType):
         Determines whether this method has been marked as disabled based on Audit Issue Scores
         settings.
         """
-        for override_score in self.override_scores:
-            if override_score.method == self.current_method_name + ' (' + self.__class__.__name__ + ')':
-                return override_score.disabled
-
-        return False
+        return next(
+            (
+                override_score.disabled
+                for override_score in self.override_scores
+                if override_score.method
+                == f'{self.current_method_name} ({self.__class__.__name__})'
+            ),
+            False,
+        )
 
     def read_previous_items(self):
         """
@@ -779,7 +790,7 @@ class Auditor(object, metaclass=AuditorType):
                     item.audit_issues.append(new_issue)
 
                     changes = True
-                    app.logger.debug("Saving NEW issue {}".format(new_issue))
+                    app.logger.debug(f"Saving NEW issue {new_issue}")
                     item.found_new_issue = True
                     item.confirmed_new_issues.append(new_issue)
 
@@ -794,13 +805,13 @@ class Auditor(object, metaclass=AuditorType):
                     # regression
                     changes = True
                     existing_issue.fixed = False
-                    app.logger.debug("Previous Issue has Regressed {}".format(existing_issue))
+                    app.logger.debug(f"Previous Issue has Regressed {existing_issue}")
 
                 else:
                     # existing issue
                     item.confirmed_existing_issues.append(existing_issue)
 
-                    item_key = "{}/{}/{}/{}".format(item.index, item.region, item.account, item.name)
+                    item_key = f"{item.index}/{item.region}/{item.account}/{item.name}"
                     app.logger.debug("Issue was previously found. Not overwriting."
                         "\n\t{item_key}\n\t{issue}".format(
                         item_key=item_key, issue=new_issue))
@@ -816,13 +827,12 @@ class Auditor(object, metaclass=AuditorType):
                     old_issue.fixed = True
                     db.session.add(old_issue)
                     item.confirmed_fixed_issues.append(old_issue)
-                    app.logger.debug("Marking issue as FIXED {}".format(old_issue))
+                    app.logger.debug(f"Marking issue as FIXED {old_issue}")
 
             if changes:
                 db.session.add(item.db_item)
-            else:
-                if loaded:
-                    db.session.expunge(item.db_item)
+            elif loaded:
+                db.session.expunge(item.db_item)
 
         db.session.commit()
         self._create_auditor_settings()
@@ -840,7 +850,7 @@ class Auditor(object, metaclass=AuditorType):
             app.logger.info("Emails are disabled in the Security Monkey configuration. Not sending them.")
             return
 
-        subject = "Security Monkey {} Auditor Report".format(self.i_am_singular)
+        subject = f"Security Monkey {self.i_am_singular} Auditor Report"
         send_email(subject=subject, recipients=self.emails, html=report)
 
     def create_report(self):
@@ -852,7 +862,7 @@ class Auditor(object, metaclass=AuditorType):
         template = jenv.get_template('jinja_audit_email.html')
 
         for item in self.items:
-            item.reportable_issues = list()
+            item.reportable_issues = []
             item.score = 0
             for issue in item.db_item.issues:
                 if issue.fixed or issue.auditor_setting.disabled:
@@ -863,9 +873,7 @@ class Auditor(object, metaclass=AuditorType):
                 item.score += issue.score
 
         sorted_list = sorted(self.items, key=lambda item: item.score, reverse=True)
-        report_list = [item for item in sorted_list if (item.score) ]
-
-        if report_list:
+        if report_list := [item for item in sorted_list if (item.score)]:
             return template.render({'items': report_list})
         return False
 
@@ -881,19 +889,24 @@ class Auditor(object, metaclass=AuditorType):
         Checks to see if an AuditorSettings entry exists for each issue.
         If it does not, one will be created with disabled set to false.
         """
-        app.logger.debug("Creating/Assigning Auditor Settings in account {} and tech {}".format(self.accounts, self.index))
+        app.logger.debug(
+            f"Creating/Assigning Auditor Settings in account {self.accounts} and tech {self.index}"
+        )
+
 
         query = ItemAudit.query
         query = query.join((Item, Item.id == ItemAudit.item_id))
         query = query.join((Technology, Technology.id == Item.tech_id))
         query = query.filter(Technology.name == self.index)
-        issues = query.filter(ItemAudit.auditor_setting_id == None).all()
+        issues = query.filter(ItemAudit.auditor_setting_id is None).all()
 
         for issue in issues:
             self._set_auditor_setting_for_issue(issue)
 
         db.session.commit()
-        app.logger.debug("Done Creating/Assigning Auditor Settings in account {} and tech {}".format(self.accounts, self.index))
+        app.logger.debug(
+            f"Done Creating/Assigning Auditor Settings in account {self.accounts} and tech {self.index}"
+        )
 
     def _set_auditor_setting_for_issue(self, issue):
 
@@ -928,12 +941,10 @@ class Auditor(object, metaclass=AuditorType):
         db.session.commit()
         db.session.refresh(auditor_setting)
 
-        app.logger.debug("Created AuditorSetting: {} - {} - {}".format(
-            issue.issue,
-            self.index,
-            # TODO: This MUST be modified when switching to new issue logic in future:
-            #       Currently there should be exactly 1 item in the list of sub_items:
-            issue.item.account.name))
+        app.logger.debug(
+            f"Created AuditorSetting: {issue.issue} - {self.index} - {issue.item.account.name}"
+        )
+
 
         return auditor_setting
 
@@ -944,13 +955,18 @@ class Auditor(object, metaclass=AuditorType):
                 if audited_items is None:
                     audited_items = self.read_previous_items_for_account(auditor_index, account)
                     if not audited_items:
-                        app.logger.info("{} Could not load audited items for {}/{}".format(self.index, auditor_index, account))
+                        app.logger.info(
+                            f"{self.index} Could not load audited items for {auditor_index}/{account}"
+                        )
+
                         self.current_support_items[account+auditor_index] = []
                     else:
                         self.current_support_items[account+auditor_index] = audited_items
                 return audited_items
 
-        raise Exception("Auditor {} is not configured as an audit support auditor for {}".format(auditor_index, self.index))
+        raise Exception(
+            f"Auditor {auditor_index} is not configured as an audit support auditor for {self.index}"
+        )
 
     def get_watcher_support_items(self, watcher_index, account):
         for index in self.support_watcher_indexes:
@@ -965,25 +981,23 @@ class Auditor(object, metaclass=AuditorType):
                         item.db_item.issues = []
 
                     if not items:
-                        app.logger.info("{} Could not load support items for {}/{}".format(self.index, watcher_index, account))
+                        app.logger.info(
+                            f"{self.index} Could not load support items for {watcher_index}/{account}"
+                        )
+
                         self.current_support_items[account+watcher_index] = []
                     else:
                         self.current_support_items[account+watcher_index] = items
                 return items
 
-        raise Exception("Watcher {} is not configured as a data support watcher for {}".format(watcher_index, self.index))
+        raise Exception(
+            f"Watcher {watcher_index} is not configured as a data support watcher for {self.index}"
+        )
 
     def _sum_item_score(self, score, issue, matching_issue):
-        if not score:
-            total = issue.score + matching_issue.score
-        else:
-            total = score
-
+        total = score or issue.score + matching_issue.score
         # 999999 is the maximum number a score can be -- this prevents DB integer out of range exceptions
-        if total > 999999:
-            return 999999
-
-        return total
+        return min(total, 999999)
 
     def link_to_support_item_issues(self, item, sub_item, sub_issue_message=None, issue_message=None, issue=None, score=None):
         """
@@ -1030,7 +1044,10 @@ class Auditor(object, metaclass=AuditorType):
         """
         for override_score in self.override_scores:
             # Look for an oberride entry that applies to
-            if override_score.method == self.current_method_name + ' (' + self.__class__.__name__ + ')':
+            if (
+                override_score.method
+                == f'{self.current_method_name} ({self.__class__.__name__})'
+            ):
                 # Check for account pattern override where a field in the account matches
                 # one configured in Settings/Audit Issue Scores
                 account = get_account_by_name(account)
@@ -1042,15 +1059,23 @@ class Auditor(object, metaclass=AuditorType):
                         # If there is no attribute, this is an account custom field
                         account_pattern_value = account.getCustom(account_pattern_score.account_field)
 
-                    if account_pattern_value is not None:
-                        # Override the score based on the matching pattern
-                        if account_pattern_value == account_pattern_score.account_pattern:
-                            app.logger.debug("Overriding score based on config {}:{} {}/{}".format(self.index, self.current_method_name + '(' + self.__class__.__name__ + ')', score, account_pattern_score.score))
-                            score = account_pattern_score.score
-                            break
+                    if (
+                        account_pattern_value is not None
+                        and account_pattern_value
+                        == account_pattern_score.account_pattern
+                    ):
+                        app.logger.debug(
+                            f"Overriding score based on config {self.index}:{self.current_method_name}({self.__class__.__name__}) {score}/{account_pattern_score.score}"
+                        )
+
+                        score = account_pattern_score.score
+                        break
                 else:
                     # No specific override pattern fund. use the generic override score
-                    app.logger.debug("Overriding score based on config {}:{} {}/{}".format(self.index, self.current_method_name + '(' + self.__class__.__name__ + ')', score, override_score.score))
+                    app.logger.debug(
+                        f"Overriding score based on config {self.index}:{self.current_method_name}({self.__class__.__name__}) {score}/{override_score.score}"
+                    )
+
                     score = override_score.score
 
         return score

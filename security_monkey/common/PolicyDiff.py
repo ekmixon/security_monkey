@@ -69,7 +69,7 @@ def process_sub_dict(key, sda, sdb, indentation):
     elif type(sda) is list:
         retstr += same("{4}\"{0}\": {2}<br/>\n{1}{4}{3},".format(key, diff_list(sda, sdb, indentation + 1), brackets['open'], brackets['close'], i(indentation)))
     else:
-        print(("process_sub_dict - Unexpected type {}".format(type(sda))))
+        print(f"process_sub_dict - Unexpected type {type(sda)}")
     return retstr
 
 
@@ -87,7 +87,7 @@ def print_list(structure, action, indentation):
         elif type(value) is list:
             new_value = print_list(value, action, indentation + 1)
         else:
-            print(("print_list - Unexpected type {}".format(type(value))))
+            print(f"print_list - Unexpected type {type(value)}")
 
         content = "{3}{1}{0}{2},".format(new_value, brackets['open'], brackets['close'], i(indentation))
 
@@ -115,7 +115,7 @@ def print_dict(structure, action, indentation):
         elif type(value) is list:
             new_value = print_list(value, action, indentation + 1)
         else:
-            print(("print_dict - Unexpected type {}".format(type(value))))
+            print(f"print_dict - Unexpected type {type(value)}")
 
         content = "{4}\"{0}\": {2}{1}{3},".format(
                 escape(key),
@@ -144,7 +144,7 @@ def print_item(value, action, indentlevel):
     elif type(value) is list:
         return print_list(value, action, indentlevel)
     else:
-        print(("print_item - Unexpected diff_dict type {}".format(type(value))))
+        print(f"print_item - Unexpected diff_dict type {type(value)}")
     return ''
 
 
@@ -160,14 +160,13 @@ def diff_dict(dicta, dictb, indentation):
                 retstr += added("{4}\"{0}\": {2}{1}{3},".format(keya, print_item(dicta[keya], 'added', indentation + 1), brackets['open'], brackets['close'], i(indentation)))
             if type(dicta[keya]) in [list, dict]:
                 retstr += added("{4}\"{0}\": {2}<br/>\n{1}{4}{3},".format(keya, print_item(dicta[keya], 'added', indentation + 1), brackets['open'], brackets['close'], i(indentation)))
+        elif type(dicta[keya]) is type(dictb[keya]):
+            retstr += process_sub_dict(keya, dicta[keya], dictb[keya], indentation)
         else:
-            if not type(dicta[keya]) is type(dictb[keya]):
-                brackets = get_brackets(dictb[keya])
-                retstr += deleted("{4}\"{0}\": {2}{1}{3},".format(keya, dictb[keya], brackets['open'], brackets['close'], i(indentation)))
-                brackets = get_brackets(dicta[keya])
-                retstr += added("{4}\"{0}\": {2}{1}{3},".format(keya, dicta[keya], brackets['open'], brackets['close'], i(indentation)))
-            else:
-                retstr += process_sub_dict(keya, dicta[keya], dictb[keya], indentation)
+            brackets = get_brackets(dictb[keya])
+            retstr += deleted("{4}\"{0}\": {2}{1}{3},".format(keya, dictb[keya], brackets['open'], brackets['close'], i(indentation)))
+            brackets = get_brackets(dicta[keya])
+            retstr += added("{4}\"{0}\": {2}{1}{3},".format(keya, dicta[keya], brackets['open'], brackets['close'], i(indentation)))
     for keyb in list(dictb.keys()):
         if keyb not in dicta:
             brackets = get_brackets(dictb[keyb])
@@ -205,8 +204,6 @@ def diff_list(lista, listb, indentation):
     """
     retstr = ''
     addedlist = []
-    deletedlist = []
-
     for item in lista:
         if item in listb:
             brackets = get_brackets(item)
@@ -218,14 +215,11 @@ def diff_list(lista, listb, indentation):
                 diffstr = print_item(item, 'same', indentation + 1)
                 retstr += same("{3}{1}<br/>\n{0}{3}{2},".format(diffstr, brackets['open'], brackets['close'], i(indentation)))
             else:
-                print(("diff_list - Unexpected Type {}".format(type(item))))
+                print(f"diff_list - Unexpected Type {type(item)}")
         else:
             addedlist.append(item)
 
-    for item in listb:
-        if item not in lista:
-            deletedlist.append(item)
-
+    deletedlist = [item for item in listb if item not in lista]
     for item in addedlist:
         bestmatch = find_most_similar(item, deletedlist)
         brackets = get_brackets(item)
@@ -238,7 +232,7 @@ def diff_list(lista, listb, indentation):
                 diffstr = print_item(item, 'added', indentation + 1)
                 retstr += added("{3}{1}<br/>\n{0}{3}{2},".format(diffstr, brackets['open'], brackets['close'], i(indentation)))
             else:
-                print(("diff_list - Unexpected Type {}".format(type(item))))
+                print(f"diff_list - Unexpected Type {type(item)}")
         else:
             if type(item) in [str, int, float]:
                 retstr += deleted("{3}{1}{0}{2},".format(escape(bestmatch), brackets['open'], brackets['close'], i(indentation)))
@@ -253,7 +247,7 @@ def diff_list(lista, listb, indentation):
                 diffstr = diff_dict(item, bestmatch, indentation + 1)
                 retstr += same("{3}{1}<br/>\n{0}{3}{2},".format(diffstr, brackets['open'], brackets['close'], i(indentation)))
             else:
-                print(("diff_list - Unexpected Type {}".format(type(item))))
+                print(f"diff_list - Unexpected Type {type(item)}")
             deletedlist.remove(bestmatch)
 
     for item in deletedlist:
@@ -266,7 +260,7 @@ def diff_list(lista, listb, indentation):
             diffstr = print_item(item, 'deleted', indentation + 1)
             retstr += deleted("{3}{1}<br/>\n{0}{3}{2},".format(diffstr, brackets['open'], brackets['close'], i(indentation)))
         else:
-            print(("diff_list - Unexpected Type {}".format(type(item))))
+            print(f"diff_list - Unexpected Type {type(item)}")
     return remove_last_comma(retstr)
 
 
@@ -323,7 +317,7 @@ def form_brackets(value, indentation):
         brackets['close'] = i(indentation) + '}'
     elif type(value) is list:
         brackets['open'] = '[<br/>\n'
-        brackets['close'] = i(indentation) + ']'
+        brackets['close'] = f'{i(indentation)}]'
     return brackets
 
 
@@ -379,7 +373,10 @@ class PolicyDiff(object):
             try:
                 self._new_policy = json.loads(new_policy)
             except Exception:
-                print(("Could not read policy in as json. Type: {} Policy: {}".format(type(new_policy), new_policy)))
+                print(
+                    f"Could not read policy in as json. Type: {type(new_policy)} Policy: {new_policy}"
+                )
+
                 self._new_policy = new_policy
         else:
             self._new_policy = json.loads(json.dumps(new_policy))
@@ -388,7 +385,10 @@ class PolicyDiff(object):
             try:
                 self._old_policy = json.loads(old_policy)
             except Exception:
-                print(("Could not read policy in as json. Type: {} Policy: {}".format(type(old_policy), old_policy)))
+                print(
+                    f"Could not read policy in as json. Type: {type(old_policy)} Policy: {old_policy}"
+                )
+
                 self._old_policy = old_policy
         else:
             self._old_policy = json.loads(json.dumps(old_policy))
@@ -396,17 +396,17 @@ class PolicyDiff(object):
         if self._old_policy is None or self._new_policy is None:
             raise ValueError("PolicyDiff could not process old policy or new policy or both.")
 
-        if not type(self._old_policy) is type(self._new_policy):
-            print(("OLD: {}".format(self._old_policy)))
-            print(("NEW: {}".format(self._new_policy)))
-            print(("Type OLD: {} Type New: {}".format(type(self._old_policy), type(self._new_policy))))
+        if type(self._old_policy) is not type(self._new_policy):
+            print(f"OLD: {self._old_policy}")
+            print(f"NEW: {self._new_policy}")
+            print(f"Type OLD: {type(self._old_policy)} Type New: {type(self._new_policy)}")
             raise ValueError("Policies passed into PolicyDiff must be the same outer type (dict, list, str, unicode).")
 
     def produceDiffHTML(self):
         if self._old_policy is None or self._new_policy is None:
             raise ValueError("PolicyDiff could not process old policy or new policy or both.")
 
-        if not type(self._old_policy) is type(self._new_policy):
+        if type(self._old_policy) is not type(self._new_policy):
             raise ValueError("Policies passed into PolicyDiff must be the same outer type (dict, list, str, unicode).")
 
         if self._old_policy == {} and self._new_policy == {}:
@@ -422,6 +422,9 @@ class PolicyDiff(object):
         elif type(self._new_policy) is list:
             inner_html = diff_list(self._new_policy, self._old_policy, 1)
         else:
-            raise ValueError("PolicyDiff::produceDiffHTML cannot process items of type: {}".format(type(self._new_policy)))
+            raise ValueError(
+                f"PolicyDiff::produceDiffHTML cannot process items of type: {type(self._new_policy)}"
+            )
+
 
         return "{1}<br/>\n{0}{2}<br/>\n".format(inner_html, brackets['open'], brackets['close'])

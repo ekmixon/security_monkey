@@ -371,9 +371,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
 
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(FULL_ADMIN_POLICY_BARE))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_star_privileges(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Administrator Access')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["*"] Resources: ["*"]')
 
@@ -388,9 +398,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
             'arn': 'arn:iam::aws:policy/',
             'policy': json.loads(FULL_ADMIN_POLICY_BARE)}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_star_privileges(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Administrator Access')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["*"] Resources: ["*"]')
 
@@ -405,9 +425,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
             'arn': 'arn:iam::aws:policy/',
             'policy': json.loads(IAM_ADMIN)}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_iam_star_privileges(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Administrator Access')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["iam:*"] Resources: ["someresource"]')
 
@@ -422,9 +452,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
             'arn': 'arn:iam::aws:policy/',
             'policy': json.loads(IAM_MUTATING)}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_permissions(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Sensitive Permissions')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Service [iam] Category: [Permissions] Resources: ["someresource"]')
 
@@ -439,9 +479,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
             'arn': 'arn:iam::aws:policy/',
             'policy': json.loads(IAM_PASSROLE)}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_iam_passrole(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Sensitive Permissions')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["iam:passrole"] Resources: ["someresource"]')
 
@@ -456,9 +506,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
             'arn': 'arn:iam::aws:policy/',
             'policy': json.loads(IAM_NOTACTION)}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_notaction(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Awkward Statement Construction')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Construct: ["NotAction"]')
 
@@ -473,9 +533,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
             'arn': 'arn:iam::aws:policy/',
             'policy': json.loads(IAM_NOTRESOURCE)}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_notresource(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Awkward Statement Construction')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Construct: ["NotResource"]')
 
@@ -490,9 +560,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
             'arn': 'arn:iam::aws:policy/',
             'policy': json.loads(IAM_SG_MUTATION)}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_security_group_permissions(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Sensitive Permissions')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["ec2:authorizesecuritygroupegress", "ec2:authorizesecuritygroupingress"] Resources: ["someresource"]')
 
@@ -519,9 +599,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
 
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(IAM_ADMIN))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_iam_star_privileges(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Administrator Access')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["iam:*"] Resources: ["someresource"]')
 
@@ -534,9 +624,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
 
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(IAM_MUTATING))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_permissions(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Sensitive Permissions')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Service [iam] Category: [Permissions] Resources: ["someresource"]')
 
@@ -549,9 +649,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
 
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(IAM_PASSROLE))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_iam_passrole(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Sensitive Permissions')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["iam:passrole"] Resources: ["someresource"]')
 
@@ -564,9 +674,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
 
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(IAM_NOTACTION))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_notaction(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Awkward Statement Construction')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Construct: ["NotAction"]')
 
@@ -579,9 +699,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
 
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(IAM_NOTRESOURCE))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_notresource(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Awkward Statement Construction')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Construct: ["NotResource"]')
 
@@ -594,9 +724,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
 
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(IAM_SG_MUTATION))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_security_group_permissions(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Sensitive Permissions')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["ec2:authorizesecuritygroupegress", "ec2:authorizesecuritygroupingress"] Resources: ["someresource"]')
 
@@ -609,9 +749,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
         iamobj = MockIAMObj()
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(FULL_ADMIN_POLICY_SINGLE_ENTRY))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_star_privileges(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Administrator Access')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["*"] Resources: ["*"]')
 
@@ -624,9 +774,19 @@ class IAMTestCase(SecurityMonkeyTestCase):
         iamobj = MockIAMObj()
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(FULL_ADMIN_POLICY_LIST))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_star_privileges(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 1, "Policy should have 1 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            1,
+            f"Policy should have 1 alert but has {len(iamobj.audit_issues)}",
+        )
+
         self.assertEqual(iamobj.audit_issues[0].issue, 'Administrator Access')
         self.assertEqual(iamobj.audit_issues[0].notes, 'Actions: ["*"] Resources: ["someresource"]')
 
@@ -639,9 +799,18 @@ class IAMTestCase(SecurityMonkeyTestCase):
         iamobj = MockIAMObj()
         iamobj.config = {'InlinePolicies': dict(MyPolicy=json.loads(NO_ADMIN_POLICY_LIST))}
 
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
+
         auditor.check_star_privileges(iamobj)
-        self.assertIs(len(iamobj.audit_issues), 0, "Policy should have 0 alert but has {}".format(len(iamobj.audit_issues)))
+        self.assertIs(
+            len(iamobj.audit_issues),
+            0,
+            f"Policy should have 0 alert but has {len(iamobj.audit_issues)}",
+        )
 
     def test_load_policies(self):
         import json
@@ -654,11 +823,13 @@ class IAMTestCase(SecurityMonkeyTestCase):
 
         policies = auditor.load_iam_policies(iamobj)
         self.assertIs(len(policies), 0, "Zero policies expected")
-        
+
         auditor.iam_policy_keys = ['InlinePolicies$*']
         iamobj.config = {'InlinePolicies': dict(Admin=json.loads(IAM_ADMIN), PassRole=json.loads(IAM_PASSROLE))}
         policies = auditor.load_iam_policies(iamobj)
-        self.assertIs(len(policies), 2, "Two policies expected but received {}".format(len(policies)))
+        self.assertIs(
+            len(policies), 2, f"Two policies expected but received {len(policies)}"
+        )
 
 
     def pre_test_setup(self):

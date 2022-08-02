@@ -7,13 +7,12 @@
 .. moduleauthor:: Mike Grima <mgrima@netflix.com>
 
 """
+
 # Broker source: Place yours here:
 import os
 
-broker_url = 'redis://{}/{}'.format(
-    os.getenv('SECURITY_MONKEY_REDIS_HOST', 'redis'),
-    os.getenv('SECURITY_MONKEY_REDIS_DB', '0')
-)
+broker_url = f"redis://{os.getenv('SECURITY_MONKEY_REDIS_HOST', 'redis')}/{os.getenv('SECURITY_MONKEY_REDIS_DB', '0')}"
+
 
 # List of modules to import when the Celery worker starts.
 imports = ('security_monkey.task_scheduler.tasks',)

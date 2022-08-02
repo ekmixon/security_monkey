@@ -75,10 +75,11 @@ class WatcherConfigApiTestCase(SecurityMonkeyApiTestCase):
 
         d = dict(index='account', interval=1440, active=True)
         r = self.test_app.put(
-            "/api/1/watcher_config/{}".format(watcher_config.id),
+            f"/api/1/watcher_config/{watcher_config.id}",
             headers=self.headers,
-            data=json.dumps(d)
+            data=json.dumps(d),
         )
+
         assert r.status_code == 200
 
     # Update the response code when we handle this appropriately (404)
@@ -89,7 +90,10 @@ class WatcherConfigApiTestCase(SecurityMonkeyApiTestCase):
         db.session.refresh(watcher_config)
 
         d = dict(index='account', interval=1440, active=True)
-        r = self.test_app.put("/api/1/watcher_config/{}".format('100'), headers=self.headers, data=json.dumps(d))
+        r = self.test_app.put(
+            '/api/1/watcher_config/100', headers=self.headers, data=json.dumps(d)
+        )
+
         assert r.status_code == 500
 
     def test_put_watcher_config_wrong_data(self):
@@ -100,8 +104,9 @@ class WatcherConfigApiTestCase(SecurityMonkeyApiTestCase):
 
         d = dict(index='account', foobar=1440, active=True)
         r = self.test_app.put(
-            "/api/1/watcher_config/{}".format(watcher_config.id),
+            f"/api/1/watcher_config/{watcher_config.id}",
             headers=self.headers,
-            data=json.dumps(d)
+            data=json.dumps(d),
         )
+
         assert r.status_code == 400

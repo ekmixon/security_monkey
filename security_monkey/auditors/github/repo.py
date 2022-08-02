@@ -41,11 +41,13 @@ class GitHubRepoAuditor(Auditor):
         :param repo_item:
         :return:
         """
-        tag = "Repo is public."
+        if (
+            repo_item.config.get("private") is not None
+            and not repo_item.config["private"]
+        ):
+            tag = "Repo is public."
 
-        if repo_item.config.get("private") is not None:
-            if not repo_item.config["private"]:
-                self.add_issue(5, tag, repo_item, notes="Public Repository")
+            self.add_issue(5, tag, repo_item, notes="Public Repository")
 
     def check_if_forked_repo(self, repo_item):
         """
@@ -53,10 +55,10 @@ class GitHubRepoAuditor(Auditor):
         :param repo_item:
         :return:
         """
-        # GitHub doesn't provide a simple way to get the source of the fork for some reason... :/
-        tag = "Repo is a fork of another repo."
-
         if repo_item.config.get("fork"):
+            # GitHub doesn't provide a simple way to get the source of the fork for some reason... :/
+            tag = "Repo is a fork of another repo."
+
             self.add_issue(3, tag, repo_item, notes="Repo is a fork of another repo")
 
     def check_for_no_protected_branches(self, repo_item):
@@ -65,9 +67,9 @@ class GitHubRepoAuditor(Auditor):
         :param repo_item:
         :return:
         """
-        tag = "Repo has no protected branches."
-
         if len(repo_item.config["protected_branches"]) == 0:
+            tag = "Repo has no protected branches."
+
             self.add_issue(0, tag, repo_item, notes="No Protected Branches")
 
     def check_for_deploy_keys(self, repo_item):
@@ -76,16 +78,20 @@ class GitHubRepoAuditor(Auditor):
         :param repo_item:
         :return:
         """
-        tag = "Repo has deploy keys."
-        push_tag = "Deploy key has PUSH access to the repo"
-
         if len(repo_item.config["deploy_keys"]) > 0:
+            tag = "Repo has deploy keys."
             self.add_issue(3, tag, repo_item, notes="Repo has deploy keys")
+
+            push_tag = "Deploy key has PUSH access to the repo"
 
             for key in repo_item.config["deploy_keys"]:
                 if not key["read_only"]:
-                    self.add_issue(5, push_tag, repo_item,
-                                   notes="Key: {} can modify the repo".format(key["title"]))
+                    self.add_issue(
+                        5,
+                        push_tag,
+                        repo_item,
+                        notes=f'Key: {key["title"]} can modify the repo',
+                    )
 
     def check_for_outside_collaborators(self, repo_item):
         """
@@ -93,17 +99,21 @@ class GitHubRepoAuditor(Auditor):
         :param repo_item:
         :return:
         """
-        oc_tag = "Repo has outside collaborators."
-        admin_oc_tag = "Repo has administrative outside collaborators."
-
         if len(repo_item.config["outside_collaborators"]) > 0:
+            oc_tag = "Repo has outside collaborators."
             self.add_issue(3, oc_tag, repo_item, notes="Repo has outside collaborators")
+
+            admin_oc_tag = "Repo has administrative outside collaborators."
 
             # Check if any of these OC's have administrative privileges:
             for oc in repo_item.config["outside_collaborators"]:
                 if oc["permissions"]["admin"]:
-                    self.add_issue(8, admin_oc_tag, repo_item,
-                                   notes="{} has admin access to this repo.".format(oc["login"]))
+                    self.add_issue(
+                        8,
+                        admin_oc_tag,
+                        repo_item,
+                        notes=f'{oc["login"]} has admin access to this repo.',
+                    )
 
     def check_for_admin_teams(self, repo_item):
         """

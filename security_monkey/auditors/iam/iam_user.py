@@ -59,12 +59,13 @@ class IAMUserAuditor(IAMPolicyAuditor):
 
         akeys = item.config.get('AccessKeys', {})
         for akey in akeys:
-            if 'Status' in akey:
-                if akey['Status'] == 'Active':
-                    note = notes.format(
-                        description='Active Accesskey',
-                        specific=' [{}]'.format(akey['AccessKeyId']))
-                    self.add_issue(1, issue, item, notes=note)
+            if 'Status' in akey and akey['Status'] == 'Active':
+                note = notes.format(
+                    description='Active Accesskey',
+                    specific=f" [{akey['AccessKeyId']}]",
+                )
+
+                self.add_issue(1, issue, item, notes=note)
 
     def check_inactive_access_keys(self, item):
         """
@@ -76,12 +77,11 @@ class IAMUserAuditor(IAMPolicyAuditor):
 
         akeys = item.config.get('AccessKeys', {})
         for akey in akeys:
-            if 'Status' in akey:
-                if akey['Status'] != 'Active':
-                    description = 'Inactive Accesskey'
-                    specific = ' [{}]'.format(akey['AccessKeyId'])
-                    note = notes.format(description=description, specific=specific)
-                    self.add_issue(0, issue, item, notes=note)
+            if 'Status' in akey and akey['Status'] != 'Active':
+                description = 'Inactive Accesskey'
+                specific = f" [{akey['AccessKeyId']}]"
+                note = notes.format(description=description, specific=specific)
+                self.add_issue(0, issue, item, notes=note)
 
     def check_access_key_rotation(self, item):
         """
@@ -93,16 +93,15 @@ class IAMUserAuditor(IAMPolicyAuditor):
 
         akeys = item.config.get('AccessKeys', {})
         for akey in akeys:
-            if 'Status' in akey:
-                if akey['Status'] == 'Active':
-                    create_date = akey['CreateDate']
-                    create_date = parser.parse(create_date)
-                    if create_date < self.ninety_days_ago:
-                        note = notes.format(
-                            what='Active Accesskey [{key}]'.format(key=akey['AccessKeyId']),
-                            requirement=requirement,
-                            date=akey['CreateDate'])
-                        self.add_issue(1, issue, item, notes=note)
+            if 'Status' in akey and akey['Status'] == 'Active':
+                create_date = akey['CreateDate']
+                create_date = parser.parse(create_date)
+                if create_date < self.ninety_days_ago:
+                    note = notes.format(
+                        what='Active Accesskey [{key}]'.format(key=akey['AccessKeyId']),
+                        requirement=requirement,
+                        date=akey['CreateDate'])
+                    self.add_issue(1, issue, item, notes=note)
 
     def check_access_key_last_used(self, item):
         """
@@ -114,16 +113,15 @@ class IAMUserAuditor(IAMPolicyAuditor):
 
         akeys = item.config.get('AccessKeys', {})
         for akey in akeys:
-            if 'Status' in akey:
-                if akey['Status'] == 'Active':
-                    last_used_str = akey.get('LastUsedDate') or akey.get('CreateDate')
-                    last_used_date = parser.parse(last_used_str)
-                    if last_used_date < self.ninety_days_ago:
-                        note = notes.format(
-                            what='Active Accesskey [{key}]'.format(key=akey['AccessKeyId']),
-                            requirement=requirement,
-                            date=last_used_str)
-                        self.add_issue(1, issue, item, notes=note)
+            if 'Status' in akey and akey['Status'] == 'Active':
+                last_used_str = akey.get('LastUsedDate') or akey.get('CreateDate')
+                last_used_date = parser.parse(last_used_str)
+                if last_used_date < self.ninety_days_ago:
+                    note = notes.format(
+                        what='Active Accesskey [{key}]'.format(key=akey['AccessKeyId']),
+                        requirement=requirement,
+                        date=last_used_str)
+                    self.add_issue(1, issue, item, notes=note)
 
     def check_no_mfa(self, item):
         """

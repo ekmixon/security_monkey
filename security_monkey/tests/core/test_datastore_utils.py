@@ -17,6 +17,7 @@
 .. version:: $$VERSION$$
 .. moduleauthor::  Mike Grima <mgrima@netflix.com>
 """
+
 import json
 
 from collections import defaultdict
@@ -32,15 +33,9 @@ ACTIVE_CONF = {
     "region": "universal",
     "name": "SomeRole",
     "policy": {
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": "*",
-                "Resource": "*"
-            }
-        ]
+        "Statement": [{"Effect": "Allow", "Action": "*", "Resource": "*"}]
     },
-    "Arn": ARN_PREFIX + ":iam::012345678910:role/SomeRole"
+    "Arn": f"{ARN_PREFIX}:iam::012345678910:role/SomeRole",
 }
 
 
@@ -90,7 +85,7 @@ class DatabaseUtilsTestCase(SecurityMonkeyTestCase):
     def test_is_active(self):
         from security_monkey.datastore_utils import is_active
 
-        not_active = {"Arn": ARN_PREFIX + ":iam::012345678910:role/someDeletedRole"}
+        not_active = {"Arn": f"{ARN_PREFIX}:iam::012345678910:role/someDeletedRole"}
         assert not is_active(not_active)
 
         still_not_active = {
@@ -109,12 +104,14 @@ class DatabaseUtilsTestCase(SecurityMonkeyTestCase):
 
         self.setup_db()
 
-        db_item = Item(region="universal",
-                       name="SomeRole",
-                       arn=ARN_PREFIX + ":iam::012345678910:role/SomeRole",
-                       tech_id=self.technology.id,
-                       account_id=self.account.id
-                       )
+        db_item = Item(
+            region="universal",
+            name="SomeRole",
+            arn=f"{ARN_PREFIX}:iam::012345678910:role/SomeRole",
+            tech_id=self.technology.id,
+            account_id=self.account.id,
+        )
+
         db.session.add(db_item)
         db.session.commit()
 
@@ -134,7 +131,7 @@ class DatabaseUtilsTestCase(SecurityMonkeyTestCase):
         item = create_item_aws(sti, self.technology, self.account)
         assert item.region == "universal"
         assert item.name == "SomeRole"
-        assert item.arn == ARN_PREFIX + ":iam::012345678910:role/SomeRole"
+        assert item.arn == f"{ARN_PREFIX}:iam::012345678910:role/SomeRole"
         assert item.tech_id == self.technology.id
         assert item.account_id == self.account.id
 
@@ -182,12 +179,14 @@ class DatabaseUtilsTestCase(SecurityMonkeyTestCase):
 
         self.setup_db()
 
-        item = Item(region="universal",
-                    name="SomeRole",
-                    arn=ARN_PREFIX + ":iam::012345678910:role/SomeRole",
-                    tech_id=self.technology.id,
-                    account_id=self.account.id
-                    )
+        item = Item(
+            region="universal",
+            name="SomeRole",
+            arn=f"{ARN_PREFIX}:iam::012345678910:role/SomeRole",
+            tech_id=self.technology.id,
+            account_id=self.account.id,
+        )
+
 
         # This is actually what is passed into result_from_item:
         sti = SomeTestItem().from_slurp(ACTIVE_CONF, account_name=self.account.name)
@@ -205,12 +204,14 @@ class DatabaseUtilsTestCase(SecurityMonkeyTestCase):
 
         self.setup_db()
 
-        item = Item(region="universal",
-                    name="SomeRole",
-                    arn=ARN_PREFIX + ":iam::012345678910:role/SomeRole",
-                    tech_id=self.technology.id,
-                    account_id=self.account.id,
-                    )
+        item = Item(
+            region="universal",
+            name="SomeRole",
+            arn=f"{ARN_PREFIX}:iam::012345678910:role/SomeRole",
+            tech_id=self.technology.id,
+            account_id=self.account.id,
+        )
+
 
         sti = SomeTestItem().from_slurp(ACTIVE_CONF, account_name=self.account.name)
 
@@ -293,10 +294,10 @@ class DatabaseUtilsTestCase(SecurityMonkeyTestCase):
         self.setup_db()
 
         # Need to create 3 items first before we can test deletions:
-        for x in range(0, 3):
+        for x in range(3):
             modConf = dict(ACTIVE_CONF)
-            modConf["name"] = "SomeRole{}".format(x)
-            modConf["Arn"] = ARN_PREFIX + ":iam::012345678910:role/SomeRole{}".format(x)
+            modConf["name"] = f"SomeRole{x}"
+            modConf["Arn"] = ARN_PREFIX + f":iam::012345678910:role/SomeRole{x}"
 
             sti = SomeTestItem().from_slurp(modConf, account_name=self.account.name)
 
@@ -319,23 +320,37 @@ class DatabaseUtilsTestCase(SecurityMonkeyTestCase):
 
         # Now, actually test for deleted revisions:
         arns = [
-            ARN_PREFIX + ":iam::012345678910:role/SomeRole",  # <-- Does not exist in the list
-            ARN_PREFIX + ":iam::012345678910:role/SomeRole0",  # <-- Does exist -- should not get deleted
+            f"{ARN_PREFIX}:iam::012345678910:role/SomeRole",
+            f"{ARN_PREFIX}:iam::012345678910:role/SomeRole0",
         ]
+
 
         inactivate_old_revisions(SomeWatcher(), arns, self.account, self.technology)
 
         # Check that SomeRole1 and SomeRole2 are marked as inactive:
         for x in range(1, 3):
-            item_revision = ItemRevision.query.join((Item, ItemRevision.id == Item.latest_revision_id)).filter(
-                Item.arn == ARN_PREFIX + ":iam::012345678910:role/SomeRole{}".format(x),
-            ).one()
+            item_revision = (
+                ItemRevision.query.join(
+                    (Item, ItemRevision.id == Item.latest_revision_id)
+                )
+                .filter(
+                    Item.arn == ARN_PREFIX + f":iam::012345678910:role/SomeRole{x}"
+                )
+                .one()
+            )
+
 
             assert not item_revision.active
 
         # Check that the SomeRole0 is still OK:
-        item_revision = ItemRevision.query.join((Item, ItemRevision.id == Item.latest_revision_id)).filter(
-            Item.arn == ARN_PREFIX + ":iam::012345678910:role/SomeRole0").one()
+        item_revision = (
+            ItemRevision.query.join(
+                (Item, ItemRevision.id == Item.latest_revision_id)
+            )
+            .filter(Item.arn == f"{ARN_PREFIX}:iam::012345678910:role/SomeRole0")
+            .one()
+        )
+
 
         assert len(ItemAudit.query.filter(ItemAudit.item_id == item_revision.item_id).all()) == 2
 

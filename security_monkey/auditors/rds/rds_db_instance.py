@@ -42,11 +42,10 @@ class RDSDBInstanceAuditor(Auditor):
         },
         """
         port = item.config.get('endpoint', {}).get('Port')
-        return dict(TCP=set([port]))
+        return dict(TCP={port})
 
     def check_internet_accessible(self, item):
-        publicly_accessible = item.config.get('publicly_accessible')
-        if publicly_accessible:
+        if publicly_accessible := item.config.get('publicly_accessible'):
             security_groups = item.config.get('vpc_security_groups', [])
             security_group_ids = {sg['VpcSecurityGroupId'] for sg in security_groups}
             sg_auditor_items = self.get_auditor_support_items(SecurityGroup.index, item.account)

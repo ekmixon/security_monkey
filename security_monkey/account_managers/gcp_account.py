@@ -42,9 +42,9 @@ class GCPAccountManager(AccountManager):
         """
         Overrides the lookup to also check the number for backwards compatibility
         """
-        account = super(GCPAccountManager,
-                        self).lookup_account_by_identifier(identifier)
-        return account
+        return super(GCPAccountManager, self).lookup_account_by_identifier(
+            identifier
+        )
 
     def _populate_account(self, account, account_type, name, active, third_party,
                           notes, identifier, custom_fields=None):

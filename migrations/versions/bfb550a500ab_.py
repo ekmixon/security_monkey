@@ -78,7 +78,7 @@ def sub_list(l):
         elif type(i) is dict:
             r.append(sub_dict(i))
         else:
-            print("Unknown Type: {}".format(type(i)))
+            print(f"Unknown Type: {type(i)}")
     r = sorted(r)
     return r
 
@@ -99,7 +99,7 @@ def sub_dict(d):
         elif type(d[k]) is dict:
             r[k] = sub_dict(d[k])
         else:
-            print("Unknown Type: {}".format(type(d[k])))
+            print(f"Unknown Type: {type(d[k])}")
     return r
 
 
@@ -110,25 +110,15 @@ def retrieve_arn(config):
     :param config: itemrevision config dict
     :return: ARN, if we can find it
     """
-    if config.get('arn'):
-        return config.get('arn')
-
-    if config.get('Arn'):
-        return config.get('Arn')
-
-    if config.get('CertificateArn'):
-        return config.get('CertificateArn')
-
-    if config.get('group', {}).get('arn'):
-        return config.get('group', {}).get('arn')
-
-    if config.get('role', {}).get('arn'):
-        return config.get('role', {}).get('arn')
-
-    if config.get('user', {}).get('arn'):
-        return config.get('user', {}).get('arn')
-
-    return None
+    return (
+        config.get('arn')
+        or config.get('Arn')
+        or config.get('CertificateArn')
+        or config.get('group', {}).get('arn')
+        or config.get('role', {}).get('arn')
+        or config.get('user', {}).get('arn')
+        or None
+    )
 
 
 def hash_item(item, ephemeral_paths):

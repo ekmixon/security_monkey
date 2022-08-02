@@ -52,12 +52,11 @@ def get_github_creds(account_names):
     for account in accounts:
         try:
             if not org_creds.get(account.identifier):
-                creds_file = account.getCustom(creds_field)
-                if creds_file:
+                if creds_file := account.getCustom(creds_field):
                     with open(creds_file, "r") as file:
                         creds_dict = json.loads(file.read())
 
-                    org_creds.update(creds_dict)
+                    org_creds |= creds_dict
                 else:
                     org_creds.update(app.config.get("GITHUB_CREDENTIALS"))
         except Exception as _:
@@ -113,7 +112,7 @@ def strip_url_fields(blob):
 
     for k in blob:
         # Is the field a dictionary or list of dicts?
-        if isinstance(blob[k], dict) or isinstance(blob[k], list):
+        if isinstance(blob[k], (dict, list)):
             strip_url_fields(blob[k])
 
         if "_url" in k:

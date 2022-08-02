@@ -8,6 +8,7 @@
 .. moduleauthor:: Patrick Kelley <pkelley@netflix.com> @monkeysecurity
 
 """
+
 from botocore.exceptions import ClientError
 from deepdiff import DeepHash
 
@@ -31,7 +32,7 @@ import logging
 # TODO: Find a better way for the sake of less hair-pulling during unit testing so that this is not a global variable
 #       that constantly breaks!!
 watcher_registry = {}
-abstract_classes = set(['Watcher', 'CloudAuxWatcher', 'CloudAuxBatchedWatcher'])
+abstract_classes = {'Watcher', 'CloudAuxWatcher', 'CloudAuxBatchedWatcher'}
 
 
 if not app.config.get("DONT_IGNORE_BOTO_VERBOSE_LOGGERS"):
@@ -40,11 +41,14 @@ if not app.config.get("DONT_IGNORE_BOTO_VERBOSE_LOGGERS"):
 
 
 class WatcherType(type):
-    def __init__(cls, name, bases, attrs):
-        super(WatcherType, cls).__init__(name, bases, attrs)
-        if cls.__name__ not in abstract_classes and cls.index:
-            app.logger.debug("Registering watcher {} {}.{}".format(cls.index, cls.__module__, cls.__name__))
-            watcher_registry[cls.index] = cls
+    def __init__(self, name, bases, attrs):
+        super(WatcherType, self).__init__(name, bases, attrs)
+        if self.__name__ not in abstract_classes and self.index:
+            app.logger.debug(
+                f"Registering watcher {self.index} {self.__module__}.{self.__name__}"
+            )
+
+            watcher_registry[self.index] = self
 
 
 class Watcher(object, metaclass=WatcherType):
@@ -62,10 +66,17 @@ class Watcher(object, metaclass=WatcherType):
     def __init__(self, accounts=None, debug=False):
         """Initializes the Watcher"""
         self.datastore = datastore.Datastore()
-        if not accounts:
-            accounts = Account.query.filter(Account.third_party==False).filter(Account.active==True).all()
-        else:
-            accounts = Account.query.filter(Account.third_party==False).filter(Account.active==True).filter(Account.name.in_(accounts)).all()
+        accounts = (
+            Account.query.filter(Account.third_party == False)
+            .filter(Account.active == True)
+            .filter(Account.name.in_(accounts))
+            .all()
+            if accounts
+            else Account.query.filter(Account.third_party == False)
+            .filter(Account.active == True)
+            .all()
+        )
+
         if not accounts:
             raise ValueError('Watcher needs a valid account')
         self.accounts = [account.name for account in accounts]
@@ -118,7 +129,7 @@ class Watcher(object, metaclass=WatcherType):
                 technology = Technology(name=self.index)
                 db.session.add(technology)
                 db.session.commit()
-                app.logger.info("Technology: {} did not exist... created it...".format(self.index))
+                app.logger.info(f"Technology: {self.index} did not exist... created it...")
 
             self.technology = technology
         else:
@@ -140,7 +151,10 @@ class Watcher(object, metaclass=WatcherType):
             # Empty prefix comes back as None instead of an empty string ...
             prefix = result.prefix or ""
             if name.lower().startswith(prefix.lower()):
-                app.logger.info("Ignoring {}/{} because of IGNORELIST prefix {}".format(self.index, name, result.prefix))
+                app.logger.info(
+                    f"Ignoring {self.index}/{name} because of IGNORELIST prefix {result.prefix}"
+                )
+
                 return True
 
         return False
@@ -180,11 +194,11 @@ class Watcher(object, metaclass=WatcherType):
 
                 return retval
             except BotoServerError as e:  # Boto
-                if not e.error_code == 'Throttling':
+                if e.error_code != 'Throttling':
                     raise e
                 increase_delay()
             except ClientError as e:  # Botocore
-                if not e.response["Error"]["Code"] == "Throttling":
+                if e.response["Error"]["Code"] != "Throttling":
                     raise e
                 increase_delay()
 
@@ -235,9 +249,15 @@ class Watcher(object, metaclass=WatcherType):
         Location can also exclude an item_name if the exception is region wide.
         """
         if location in exception_map:
-            app.logger.debug("Exception map already has location {}. This should not happen.".format(location))
+            app.logger.debug(
+                f"Exception map already has location {location}. This should not happen."
+            )
+
         exception_map[location] = exception
-        app.logger.debug("Adding {} to the exceptions list. Exception was: {}".format(location, str(exception)))
+        app.logger.debug(
+            f"Adding {location} to the exceptions list. Exception was: {str(exception)}"
+        )
+
 
         # Store it to the database:
         store_exception(source, location, exception)
@@ -257,22 +277,34 @@ class Watcher(object, metaclass=WatcherType):
         """
         # Exact Match
         if item_location in exception_map:
-            app.logger.debug("Skipping {} due to an item-level exception {}.".format(item_location, exception_map[item_location]))
+            app.logger.debug(
+                f"Skipping {item_location} due to an item-level exception {exception_map[item_location]}."
+            )
+
             return True
 
         # (index, account, region)
-        if item_location[0:3] in exception_map:
-            app.logger.debug("Skipping {} due to a region-level exception {}.".format(item_location, exception_map[item_location[0:3]]))
+        if item_location[:3] in exception_map:
+            app.logger.debug(
+                f"Skipping {item_location} due to a region-level exception {exception_map[item_location[:3]]}."
+            )
+
             return True
 
         # (index, account)
-        if item_location[0:2] in exception_map:
-            app.logger.debug("Skipping {} due to an account-level exception {}.".format(item_location, exception_map[item_location[0:2]]))
+        if item_location[:2] in exception_map:
+            app.logger.debug(
+                f"Skipping {item_location} due to an account-level exception {exception_map[item_location[:2]]}."
+            )
+
             return True
 
         # (index)
-        if item_location[0:1] in exception_map:
-            app.logger.debug("Skipping {} due to a technology-level exception {}.".format(item_location, exception_map[item_location[0:1]]))
+        if item_location[:1] in exception_map:
+            app.logger.debug(
+                f"Skipping {item_location} due to a technology-level exception {exception_map[item_location[:1]]}."
+            )
+
             return True
 
         return False
@@ -291,7 +323,10 @@ class Watcher(object, metaclass=WatcherType):
 
         for item in list_deleted_items:
             deleted_change_item = ChangeItem.from_items(old_item=item, new_item=None, source_watcher=self)
-            app.logger.debug("%s: %s/%s/%s deleted" % (self.i_am_singular, item.account, item.region, item.name))
+            app.logger.debug(
+                f"{self.i_am_singular}: {item.account}/{item.region}/{item.name} deleted"
+            )
+
             self.deleted_items.append(deleted_change_item)
 
     def find_new(self, previous=[], current=[]):
@@ -308,7 +343,9 @@ class Watcher(object, metaclass=WatcherType):
         for item in list_new_items:
             new_change_item = ChangeItem.from_items(old_item=None, new_item=item, source_watcher=self)
             self.created_items.append(new_change_item)
-            app.logger.debug("%s: %s/%s/%s created" % (self.i_am_singular, item.account, item.region, item.name))
+            app.logger.debug(
+                f"{self.i_am_singular}: {item.account}/{item.region}/{item.name} created"
+            )
 
     def find_modified(self, previous=[], current=[], exception_map={}):
         """
@@ -328,7 +365,7 @@ class Watcher(object, metaclass=WatcherType):
             eph_change_item = None
             dur_change_item = None
 
-            if not sub_dict(prev_item.config) == sub_dict(curr_item.config):
+            if sub_dict(prev_item.config) != sub_dict(curr_item.config):
                 eph_change_item = ChangeItem.from_items(old_item=prev_item, new_item=curr_item, source_watcher=self)
 
             if self.ephemerals_skipped():
@@ -345,22 +382,32 @@ class Watcher(object, metaclass=WatcherType):
                                 pass
 
                 # now, compare only non-ephemeral paths
-                if not sub_dict(dur_prev_item.config) == sub_dict(dur_curr_item.config):
+                if sub_dict(dur_prev_item.config) != sub_dict(
+                    dur_curr_item.config
+                ):
                     dur_change_item = ChangeItem.from_items(old_item=dur_prev_item, new_item=dur_curr_item,
                                                             source_watcher=self)
 
                 # store all changes, divided in specific categories
                 if eph_change_item:
                     self.ephemeral_items.append(eph_change_item)
-                    app.logger.debug("%s: ephemeral changes in item %s/%s/%s" % (self.i_am_singular, eph_change_item.account, eph_change_item.region, eph_change_item.name))
+                    app.logger.debug(
+                        f"{self.i_am_singular}: ephemeral changes in item {eph_change_item.account}/{eph_change_item.region}/{eph_change_item.name}"
+                    )
+
                 if dur_change_item:
                     self.changed_items.append(dur_change_item)
-                    app.logger.debug("%s: durable changes in item %s/%s/%s" % (self.i_am_singular, dur_change_item.account, dur_change_item.region, dur_change_item.name))
+                    app.logger.debug(
+                        f"{self.i_am_singular}: durable changes in item {dur_change_item.account}/{dur_change_item.region}/{dur_change_item.name}"
+                    )
+
 
             elif eph_change_item is not None:
                 # store all changes, handle them all equally
                 self.changed_items.append(eph_change_item)
-                app.logger.debug("%s: changes in item %s/%s/%s" % (self.i_am_singular, eph_change_item.account, eph_change_item.region, eph_change_item.name))
+                app.logger.debug(
+                    f"{self.i_am_singular}: changes in item {eph_change_item.account}/{eph_change_item.region}/{eph_change_item.name}"
+                )
 
     def find_changes(self, current=None, exception_map=None):
         """
@@ -371,16 +418,14 @@ class Watcher(object, metaclass=WatcherType):
         current = current or []
         exception_map = exception_map or {}
 
-        # Batching only logic here:
         if self.batched_size > 0:
             # Return the items that should be audited:
             return self.find_changes_batch(current, exception_map)
 
-        else:
-            prev = self.read_previous_items()
-            self.find_deleted(previous=prev, current=current, exception_map=exception_map)
-            self.find_new(previous=prev, current=current)
-            self.find_modified(previous=prev, current=current, exception_map=exception_map)
+        prev = self.read_previous_items()
+        self.find_deleted(previous=prev, current=current, exception_map=exception_map)
+        self.find_new(previous=prev, current=current)
+        self.find_modified(previous=prev, current=current, exception_map=exception_map)
 
     def find_changes_batch(self, items, exception_map):
         # Given the list of items, find new items that don't yet exist:
@@ -496,8 +541,14 @@ class Watcher(object, metaclass=WatcherType):
         """
         save new configs, if necessary
         """
-        app.logger.info("{} deleted {} in {}".format(len(self.deleted_items), self.i_am_plural, self.accounts))
-        app.logger.info("{} created {} in {}".format(len(self.created_items), self.i_am_plural, self.accounts))
+        app.logger.info(
+            f"{len(self.deleted_items)} deleted {self.i_am_plural} in {self.accounts}"
+        )
+
+        app.logger.info(
+            f"{len(self.created_items)} created {self.i_am_plural} in {self.accounts}"
+        )
+
         for item in self.created_items + self.deleted_items:
             item.save(self.datastore)
 
@@ -505,16 +556,25 @@ class Watcher(object, metaclass=WatcherType):
             changed_locations = [item.location() for item in self.changed_items]
 
             new_item_revisions = [item for item in self.ephemeral_items if item.location() in changed_locations]
-            app.logger.info("{} changed {} in {}".format(len(new_item_revisions), self.i_am_plural, self.accounts))
+            app.logger.info(
+                f"{len(new_item_revisions)} changed {self.i_am_plural} in {self.accounts}"
+            )
+
             for item in new_item_revisions:
                 item.save(self.datastore)
 
             edit_item_revisions = [item for item in self.ephemeral_items if item.location() not in changed_locations]
-            app.logger.info("{} ephemerally changed {} in {}".format(len(edit_item_revisions), self.i_am_plural, self.accounts))
+            app.logger.info(
+                f"{len(edit_item_revisions)} ephemerally changed {self.i_am_plural} in {self.accounts}"
+            )
+
             for item in edit_item_revisions:
                 item.save(self.datastore, ephemeral=True)
         else:
-            app.logger.info("{} changed {} in {}".format(len(self.changed_items), self.i_am_plural, self.accounts))
+            app.logger.info(
+                f"{len(self.changed_items)} changed {self.i_am_plural} in {self.accounts}"
+            )
+
             for item in self.changed_items:
                 item.save(self.datastore)
         report_watcher_changes(self)
@@ -535,16 +595,18 @@ class Watcher(object, metaclass=WatcherType):
 
     def get_interval(self):
         """ Returns interval time (in minutes) """
-        config = WatcherConfig.query.filter(WatcherConfig.index == self.index).first()
-        if config:
+        if config := WatcherConfig.query.filter(
+            WatcherConfig.index == self.index
+        ).first():
             return config.interval
 
         return self.interval
 
     def is_active(self):
         """ Returns active """
-        config = WatcherConfig.query.filter(WatcherConfig.index == self.index).first()
-        if config:
+        if config := WatcherConfig.query.filter(
+            WatcherConfig.index == self.index
+        ).first():
             return config.active
 
         return self.active
@@ -566,8 +628,8 @@ class ChangeItem(object):
         self.account = account
         self.name = name
         self.arn = arn
-        self.old_config = old_config if old_config else {}
-        self.new_config = new_config if new_config else {}
+        self.old_config = old_config or {}
+        self.new_config = new_config or {}
         self.active = active
         self.audit_issues = audit_issues or []
         self.confirmed_new_issues = []
@@ -584,9 +646,9 @@ class ChangeItem(object):
         """
         if not old_item and not new_item:
             return
-        valid_item = new_item if new_item else old_item
+        valid_item = new_item or old_item
         audit_issues = old_item.audit_issues if old_item else []
-        active = True if new_item else False
+        active = bool(new_item)
         old_config = old_item.config if old_item else {}
         new_config = new_item.config if new_item else {}
         return cls(index=valid_item.index,
@@ -633,15 +695,17 @@ class ChangeItem(object):
         """
         jenv = get_jinja_env()
         template = jenv.get_template('jinja_change_item.html')
-        body = template.render(self._dict_for_template())
         # app.logger.info(body)
-        return body
+        return template.render(self._dict_for_template())
 
     def save(self, datastore, ephemeral=False):
         """
         Save the item
         """
-        app.logger.debug("Saving {}/{}/{}/{}\n\t{}".format(self.index, self.account, self.region, self.name, self.new_config))
+        app.logger.debug(
+            f"Saving {self.index}/{self.account}/{self.region}/{self.name}\n\t{self.new_config}"
+        )
+
         self.db_item = datastore.store(
             self.index,
             self.region,
@@ -666,23 +730,12 @@ def ensure_item_has_latest_revision_id(item):
     :return The item if it was fixed -- or None if it was deleted from the DB:
     """
     if not item.latest_revision_id:
-        current_revision = db.session.query(ItemRevision).filter(ItemRevision.item_id == item.id)\
-                            .order_by(ItemRevision.date_created.desc()).first()
-
-        if not current_revision:
-            db.session.delete(item)
-            db.session.commit()
-
-            app.logger.error("[?] Item: {name}/{tech}/{account}/{region} does NOT have a latest revision attached, "
-                             "and no current revisions were located. The item has been deleted.".format(
-                                name=item.name,
-                                tech=item.technology.name,
-                                account=item.account.name,
-                                region=item.region))
-
-            return None
-
-        else:
+        if (
+            current_revision := db.session.query(ItemRevision)
+            .filter(ItemRevision.item_id == item.id)
+            .order_by(ItemRevision.date_created.desc())
+            .first()
+        ):
             # Update the latest revision ID:
             item.latest_revision_id = current_revision.id
 
@@ -693,11 +746,7 @@ def ensure_item_has_latest_revision_id(item):
             ds = Datastore()
 
             # 2. Generate the hashes:
-            if watcher.honor_ephemerals:
-                ephemeral_paths = watcher.ephemeral_paths
-            else:
-                ephemeral_paths = []
-
+            ephemeral_paths = watcher.ephemeral_paths if watcher.honor_ephemerals else []
             item.latest_revision_complete_hash = DeepHash(current_revision.config)[current_revision.config]
             item.latest_revision_durable_hash = durable_hash(current_revision.config, ephemeral_paths)
 
@@ -710,5 +759,18 @@ def ensure_item_has_latest_revision_id(item):
                                 tech=item.technology.name,
                                 account=item.account.name,
                                 region=item.region))
+
+        else:
+            db.session.delete(item)
+            db.session.commit()
+
+            app.logger.error("[?] Item: {name}/{tech}/{account}/{region} does NOT have a latest revision attached, "
+                             "and no current revisions were located. The item has been deleted.".format(
+                                name=item.name,
+                                tech=item.technology.name,
+                                account=item.account.name,
+                                region=item.region))
+
+            return None
 
     return item

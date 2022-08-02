@@ -32,14 +32,18 @@ from sqlalchemy.exc import OperationalError, InvalidRequestError, StatementError
 @CELERY.task(bind=True, max_retries=3)
 def task_account_tech(self, account_name, technology_name):
     setup()
-    app.logger.info("[ ] Executing Celery task for account: {}, technology: {}".format(account_name, technology_name))
+    app.logger.info(
+        f"[ ] Executing Celery task for account: {account_name}, technology: {technology_name}"
+    )
+
     time1 = time.time()
 
     # Verify that the account exists (was it deleted? was it renamed?):
     if not Account.query.filter(Account.name == account_name).first():
-        app.logger.error("[X] Account has been removed or renamed: {}. Please restart the scheduler to fix.".format(
-            account_name
-        ))
+        app.logger.error(
+            f"[X] Account has been removed or renamed: {account_name}. Please restart the scheduler to fix."
+        )
+
         return
 
     try:
@@ -49,11 +53,16 @@ def task_account_tech(self, account_name, technology_name):
         app.logger.info('[@] Run Account for Technology (%s/%s) took %0.1f s' % (account_name,
                                                                                  technology_name, (time2 - time1)))
         app.logger.info(
-            "[+] Completed Celery task for account: {}, technology: {}".format(account_name, technology_name))
+            f"[+] Completed Celery task for account: {account_name}, technology: {technology_name}"
+        )
+
     except Exception as e:
         if sentry:
             sentry.captureException()
-        app.logger.error("[X] Task Account Scheduler Exception ({}/{}): {}".format(account_name, technology_name, e))
+        app.logger.error(
+            f"[X] Task Account Scheduler Exception ({account_name}/{technology_name}): {e}"
+        )
+
         app.logger.error(traceback.format_exc())
         store_exception("scheduler-exception-on-watch", None, e)
         raise self.retry(exc=e)
@@ -63,25 +72,33 @@ def task_account_tech(self, account_name, technology_name):
 def task_audit(self, account_name, technology_name):
     setup()
 
-    app.logger.info("[ ] Executing Celery task to audit changes for Account: {} Technology: {}".format(account_name,
-                                                                                                       technology_name))
+    app.logger.info(
+        f"[ ] Executing Celery task to audit changes for Account: {account_name} Technology: {technology_name}"
+    )
+
     # Verify that the account exists (was it deleted? was it renamed?):
     if not Account.query.filter(Account.name == account_name).first():
-        app.logger.error("[X] Account has been removed or renamed: {}. Please restart the scheduler to fix.".format(
-            account_name
-        ))
+        app.logger.error(
+            f"[X] Account has been removed or renamed: {account_name}. Please restart the scheduler to fix."
+        )
+
         return
 
     try:
         audit_changes([account_name], [technology_name], True)
 
-        app.logger.info("[+] Completed Celery task for account: {}, technology: {}".format(account_name,
-                                                                                           technology_name))
+        app.logger.info(
+            f"[+] Completed Celery task for account: {account_name}, technology: {technology_name}"
+        )
+
 
     except Exception as e:
         if sentry:
             sentry.captureException()
-        app.logger.error("[X] Task Audit Scheduler Exception ({}/{}): {}".format(account_name, technology_name, e))
+        app.logger.error(
+            f"[X] Task Audit Scheduler Exception ({account_name}/{technology_name}): {e}"
+        )
+
         app.logger.error(traceback.format_exc())
         store_exception("scheduler-exception-on-audit", None, e)
         self.retry(exc=e)
@@ -109,13 +126,20 @@ def fix_orphaned_deletions(account_name, technology_name):
         technology = Technology(name=technology_name)
         db.session.add(technology)
         db.session.commit()
-        app.logger.info("Technology: {} did not exist... created it...".format(technology_name))
+        app.logger.info(
+            f"Technology: {technology_name} did not exist... created it..."
+        )
+
 
     account = Account.query.filter(Account.name == account_name).one()
 
     # Query for orphaned items of the given technology/account pair:
-    orphaned_items = Item.query.filter(Item.account_id == account.id, Item.tech_id == technology.id,
-                                       Item.latest_revision_id == None).all()  # noqa
+    orphaned_items = Item.query.filter(
+        Item.account_id == account.id,
+        Item.tech_id == technology.id,
+        Item.latest_revision_id is None,
+    ).all()
+
 
     if not orphaned_items:
         app.logger.info("[@] No orphaned items have been found. (This is good)")
@@ -123,7 +147,10 @@ def fix_orphaned_deletions(account_name, technology_name):
 
     # Fix the orphaned items:
     for oi in orphaned_items:
-        app.logger.error("[?] Found an orphaned item: {}. Creating a deletion record for it".format(oi.name))
+        app.logger.error(
+            f"[?] Found an orphaned item: {oi.name}. Creating a deletion record for it"
+        )
+
         revision = ItemRevision(active=False, config={})
         oi.revisions.append(revision)
         db.session.add(revision)
@@ -136,7 +163,7 @@ def fix_orphaned_deletions(account_name, technology_name):
         db.session.add(oi)
 
         db.session.commit()
-        app.logger.info("[-] Created deletion record for item: {}.".format(oi.name))
+        app.logger.info(f"[-] Created deletion record for item: {oi.name}.")
 
 
 def reporter_logic(account_name, technology_name):
@@ -149,10 +176,12 @@ def reporter_logic(account_name, technology_name):
         monitors = find_changes(account_name, technology_name)
 
         # Alert:
-        app.logger.info("[ ] Sending alerts (if applicable) for account: {}, technology: {}".format(account_name,
-                                                                                                    technology_name))
+        app.logger.info(
+            f"[ ] Sending alerts (if applicable) for account: {account_name}, technology: {technology_name}"
+        )
+
         Alerter(monitors, account=account_name).report()
-    except (OperationalError, InvalidRequestError, StatementError) as e:
+    except (InvalidRequestError, StatementError) as e:
         app.logger.exception("[X] Database error processing account %s - technology %s cleaning up session.",
                              account_name, technology_name)
         db.session.remove()
@@ -171,15 +200,17 @@ def manual_run_change_reporter(accounts):
 
             for monitor in rep.all_monitors:
                 if monitor.watcher:
-                    app.logger.info("[ ] Running change finder for "
-                                    "account: {} technology: {}".format(account, monitor.watcher.index))
+                    app.logger.info(
+                        f"[ ] Running change finder for account: {account} technology: {monitor.watcher.index}"
+                    )
+
                     reporter_logic(account, monitor.watcher.index)
 
             time2 = time.time()
             app.logger.info('[@] Run Account %s took %0.1f s' % (account, (time2 - time1)))
 
         app.logger.info("[+] Completed manual change reporting.")
-    except (OperationalError, InvalidRequestError, StatementError) as e:
+    except (InvalidRequestError, StatementError) as e:
         app.logger.exception("[X] Database error processing cleaning up session.")
         db.session.remove()
         store_exception("scheduler-run-change-reporter", None, e)
@@ -200,7 +231,7 @@ def manual_run_change_finder(accounts, technologies):
             time2 = time.time()
             app.logger.info('[@] Run Account %s took %0.1f s' % (account, (time2 - time1)))
         app.logger.info("[+] Completed manual change finder.")
-    except (OperationalError, InvalidRequestError, StatementError) as e:
+    except (InvalidRequestError, StatementError) as e:
         app.logger.exception("[X] Database error processing cleaning up session.")
         db.session.remove()
         store_exception("scheduler-run-change-reporter", None, e)
@@ -220,7 +251,10 @@ def find_changes(account_name, monitor_name, debug=True):
     items = []
     for mon in monitors:
         cw = mon.watcher
-        app.logger.info("[-->] Looking for changes in account: {}, technology: {}".format(account_name, cw.index))
+        app.logger.info(
+            f"[-->] Looking for changes in account: {account_name}, technology: {cw.index}"
+        )
+
         if mon.batch_support:
             batch_logic(mon, cw, account_name, debug)
         else:
@@ -262,7 +296,10 @@ def audit_changes(accounts, monitor_names, send_report, debug=True, skip_batch=T
             if monitor.batch_support and skip_batch:
                 continue
 
-            app.logger.debug("[-->] Auditing account: {}, technology: {}".format(account, monitor.watcher.index))
+            app.logger.debug(
+                f"[-->] Auditing account: {account}, technology: {monitor.watcher.index}"
+            )
+
             _audit_changes(account, monitor.auditors, send_report, debug)
 
             _post_metric(
@@ -289,11 +326,7 @@ def batch_logic(monitor, current_watcher, account_name, debug):
     if len(exception_map) > 0:
         # Get the location tuple to collect the region:
         location = list(exception_map.keys())[0]
-        if len(location) > 2:
-            region = location[2]
-        else:
-            region = "unknown"
-
+        region = location[2] if len(location) > 2 else "unknown"
         exc_strings = [str(exc) for exc in list(exception_map.values())]
 
         app.logger.error("[X] Exceptions have caused nothing to be fetched for {technology}"
@@ -347,9 +380,9 @@ def _audit_changes(account, auditors, send_report, debug=True):
                 au.email_report(report)
 
             if jirasync:
-                app.logger.info('[-->] Syncing {} issues on {} with Jira'.format(au.index, account))
+                app.logger.info(f'[-->] Syncing {au.index} issues on {account} with Jira')
                 jirasync.sync_issues([account], au.index)
-    except (OperationalError, InvalidRequestError, StatementError) as e:
+    except (InvalidRequestError, StatementError) as e:
         app.logger.exception("[X] Database error processing accounts %s, cleaning up session.", account)
         db.session.remove()
         store_exception("scheduler-audit-changes", None, e)
@@ -374,9 +407,12 @@ def _audit_specific_changes(monitor, audit_items, send_report, debug=True):
                 au.email_report(report)
 
             if jirasync:
-                app.logger.info('[-->] Syncing {} issues on {} with Jira'.format(au.index, monitor.watcher.accounts[0]))
+                app.logger.info(
+                    f'[-->] Syncing {au.index} issues on {monitor.watcher.accounts[0]} with Jira'
+                )
+
                 jirasync.sync_issues(monitor.watcher.accounts, au.index)
-    except (OperationalError, InvalidRequestError, StatementError) as e:
+    except (InvalidRequestError, StatementError) as e:
         app.logger.exception("[X] Database error processing accounts %s, cleaning up session.",
                              monitor.watcher.accounts[0])
         db.session.remove()

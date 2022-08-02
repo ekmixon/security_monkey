@@ -49,13 +49,12 @@ class GCEFirewallRuleAuditor(Auditor):
         errors = []
         if allowed_list:
             for allowed in allowed_list:
-                ports = allowed.get('ports', None)
-                if ports:
+                if ports := allowed.get('ports', None):
                     for port in ports:
-                        if str(port).find('-') > -1:
+                        if '-' in str(port):
                             ae = make_audit_issue(
                                 error_cat, 'EXISTS', 'PORTRANGE')
-                            ae.notes = '%s:%s' % (allowed['IPProtocol'], port)
+                            ae.notes = f"{allowed['IPProtocol']}:{port}"
                             errors.append(ae)
         return errors
 
@@ -96,9 +95,7 @@ class GCEFirewallRuleAuditor(Auditor):
         err = self._target_tags_valid(target_tags)
         errors.extend(err) if err else None
 
-        if errors:
-            return (False, errors)
-        return (True, None)
+        return (False, errors) if errors else (True, None)
 
     def inspect_source_ranges(self, item):
         """
@@ -108,14 +105,11 @@ class GCEFirewallRuleAuditor(Auditor):
         """
         errors = []
 
-        source_ranges = item.config.get('SourceRanges', None)
-        if source_ranges:
+        if source_ranges := item.config.get('SourceRanges', None):
             err = self._source_ranges_open(source_ranges)
             errors.extend(err) if err else None
 
-        if errors:
-            return (False, errors)
-        return (True, None)
+        return (False, errors) if errors else (True, None)
 
     def inspect_allowed(self, item):
         """
@@ -128,9 +122,7 @@ class GCEFirewallRuleAuditor(Auditor):
         err = self._port_range_exists(item.config.get('Allowed'))
         errors.extend(err) if err else None
 
-        if errors:
-            return (False, errors)
-        return (True, None)
+        return (False, errors) if errors else (True, None)
 
     def check_allowed(self, item):
         (ok, errors) = self.inspect_allowed(item)

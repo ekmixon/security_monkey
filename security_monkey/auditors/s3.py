@@ -60,8 +60,7 @@ class S3Auditor(ResourcePolicyAuditor):
                 continue
 
             entity = Entity(category='ACL', value=key)
-            account = self._get_account(field, key)
-            if account:
+            if account := self._get_account(field, key):
                 entity.account_name=account['name']
                 entity.account_identifier=account['identifier']
             recorder(item, actions=acl[key], entity=entity)

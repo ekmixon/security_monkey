@@ -41,9 +41,12 @@ class Reporter(object):
         """
         mons = []
         if interval:
-            for monitor in self.all_monitors:
-                if monitor.watcher and interval == monitor.watcher.get_interval():
-                    mons.append(monitor)
+            mons.extend(
+                monitor
+                for monitor in self.all_monitors
+                if monitor.watcher and interval == monitor.watcher.get_interval()
+            )
+
         else:
             mons = self.all_monitors
         return mons
@@ -67,18 +70,21 @@ class Reporter(object):
         if auditor.support_watcher_indexes:
             for support_watcher_index in auditor.support_watcher_indexes:
                 if support_watcher_index in watchers_with_changes:
-                    app.logger.debug("Upstream watcher changed {}. reauditing {}".format(
-                                     support_watcher_index, watcher.index))
+                    app.logger.debug(
+                        f"Upstream watcher changed {support_watcher_index}. reauditing {watcher.index}"
+                    )
+
 
                     watcher.full_audit_list = auditor.read_previous_items()
         if auditor.support_auditor_indexes:
             for support_auditor_index in auditor.support_auditor_indexes:
                 if support_auditor_index in watchers_with_changes:
-                    app.logger.debug("Upstream auditor changed {}. reauditing {}".format(
-                                     support_auditor_index, watcher.index))
+                    app.logger.debug(
+                        f"Upstream auditor changed {support_auditor_index}. reauditing {watcher.index}"
+                    )
+
                     watcher.full_audit_list = auditor.read_previous_items()
 
-        if watcher.full_audit_list:
-            return watcher.full_audit_list
-
-        return [item for item in watcher.created_items + watcher.changed_items]
+        return watcher.full_audit_list or list(
+            watcher.created_items + watcher.changed_items
+        )

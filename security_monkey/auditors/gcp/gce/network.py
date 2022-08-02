@@ -67,9 +67,7 @@ class GCENetworkAuditor(Auditor):
         err = self._legacy_exists(network)
         errors.extend(err) if err else None
 
-        if errors:
-            return (False, errors)
-        return (True, None)
+        return (False, errors) if errors else (True, None)
 
     def check_networks(self, item):
         (ok, errors) = self.inspect_network(item)

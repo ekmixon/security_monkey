@@ -34,9 +34,16 @@ class S3CanonicalTestCase(SecurityMonkeyTestCase):
         db.session.add(self.account_type)
         db.session.commit()
 
-        for x in range(0, 9):
-            db.session.add(Account(name="account{}".format(x), account_type_id=self.account_type.id,
-                                   identifier="01234567891{}".format(x), active=True))
+        for x in range(9):
+            db.session.add(
+                Account(
+                    name=f"account{x}",
+                    account_type_id=self.account_type.id,
+                    identifier=f"01234567891{x}",
+                    active=True,
+                )
+            )
+
 
         db.session.commit()
 
@@ -129,7 +136,10 @@ class S3CanonicalTestCase(SecurityMonkeyTestCase):
         from security_monkey.account_manager import account_registry
 
         for name, account_manager in list(account_registry.items()):
-            manager.add_command("add_account_%s" % name.lower(), AddAccount(account_manager()))
+            manager.add_command(
+                f"add_account_{name.lower()}", AddAccount(account_manager())
+            )
+
 
         manager.handle("manage.py", ["add_account_aws", "-n", "test", "--active", "--id", "99999999999",
                                      "--canonical_id", "bcaf1ffd86f41161ca5fb16fd081034f", "--s3_name", "test",
@@ -156,7 +166,10 @@ class S3CanonicalTestCase(SecurityMonkeyTestCase):
         from security_monkey.account_manager import account_registry
 
         for name, account_manager in list(account_registry.items()):
-            manager.add_command("add_account_%s" % name.lower(), AddAccount(account_manager()))
+            manager.add_command(
+                f"add_account_{name.lower()}", AddAccount(account_manager())
+            )
+
 
         # Update:
         manager.handle("manage.py", ["add_account_aws", "-n", "account0", "--active", "--id", "012345678910",

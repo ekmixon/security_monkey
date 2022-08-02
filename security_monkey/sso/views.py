@@ -169,8 +169,7 @@ class AzureAD(Resource):
                 secret = get_rsa_public_key(key['n'], key['e'])
                 algo = header_data['alg']
                 return secret, algo
-        else:
-            return dict(message='Key not found'), 403
+        return dict(message='Key not found'), 403
 
     def validate_id_token(self, id_token, client_id, jwks_url):
         # validate your token based on the key it was signed with
@@ -302,21 +301,27 @@ class Google(Resource):
         google_hosted_domain = current_app.config.get("GOOGLE_HOSTED_DOMAIN")
         userKey = None
         if google_hosted_domain is not None:
-            current_app.logger.debug('We need to verify that the token was issued for this hosted domain: %s ' % (google_hosted_domain))
+            current_app.logger.debug(
+                f'We need to verify that the token was issued for this hosted domain: {google_hosted_domain} '
+            )
+
 
             # Get the JSON Web Token
             id_token = token['id_token']
-            current_app.logger.debug('The id_token is: %s' % (id_token))
+            current_app.logger.debug(f'The id_token is: {id_token}')
 
             # Extract the payload
             (header_data, payload_data) = fetch_token_header_payload(id_token)
-            current_app.logger.debug('id_token.header_data: %s' % (header_data))
-            current_app.logger.debug('id_token.payload_data: %s' % (payload_data))
+            current_app.logger.debug(f'id_token.header_data: {header_data}')
+            current_app.logger.debug(f'id_token.payload_data: {payload_data}')
 
             token_hd = payload_data.get('hd')
             if token_hd != google_hosted_domain:
-                current_app.logger.debug('Verification failed: %s != %s' % (token_hd, google_hosted_domain))
-                return dict(message='Token is invalid %s' % token), 403
+                current_app.logger.debug(
+                    f'Verification failed: {token_hd} != {google_hosted_domain}'
+                )
+
+                return dict(message=f'Token is invalid {token}'), 403
             current_app.logger.debug('Verification passed')
             userKey = payload_data.get('email')
 
@@ -333,27 +338,29 @@ class Google(Resource):
                                                                                            'email': userKey}
             r = requests.get(api_url, headers=headers)
             groups = r.json()
-            current_app.logger.debug('authenticated user with groups: %s' % groups)
+            current_app.logger.debug(f'authenticated user with groups: {groups}')
             if len(groups.get('groups', [])) == 0:
-                return dict(message='Groups association is invald for %s' % userKey), 403
-            else:
-                groupsEmails = [o['email'] for o in groups.get('groups', [])]
-                default_role = current_app.config.get('GOOGLE_DEFAULT_ROLE', 'View')
+                return dict(message=f'Groups association is invald for {userKey}'), 403
+            groupsEmails = [o['email'] for o in groups.get('groups', [])]
+            default_role = current_app.config.get('GOOGLE_DEFAULT_ROLE', 'View')
 
-                if current_app.config.get('GOOGLE_ADMIN_ROLE_GROUP_NAME') and \
+            if current_app.config.get('GOOGLE_ADMIN_ROLE_GROUP_NAME') and \
                         current_app.config.get('GOOGLE_ADMIN_ROLE_GROUP_NAME') in groupsEmails:
-                    default_role = "Admin"
+                default_role = "Admin"
 
-                current_app.logger.debug('Authenticating user %s as role %s' % (userKey, default_role))
-                user = setup_user(userKey, groupsEmails, default_role)
+            current_app.logger.debug(
+                f'Authenticating user {userKey} as role {default_role}'
+            )
 
-                # Tell Flask-Principal the identity changed
-                identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
-                login_user(user)
-                db.session.commit()
-                db.session.refresh(user)
+            user = setup_user(userKey, groupsEmails, default_role)
 
-                return redirect(return_to, code=302)
+            # Tell Flask-Principal the identity changed
+            identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
+            login_user(user)
+            db.session.commit()
+            db.session.refresh(user)
+
+            return redirect(return_to, code=302)
         elif self._isAuthMethod('people'):
             headers = {'Authorization': 'Bearer {0}'.format(token['access_token'])}
 
@@ -400,22 +407,19 @@ class OneLogin(Resource):
 
     def _consumer(self, auth):
         auth.process_response()
-        errors = auth.get_errors()
+        if not (errors := auth.get_errors()):
+            return bool(auth.is_authenticated)
+        last_error_reason = auth.get_last_error_reason()
+        current_app.logger.error(
+            f"Error processing {', '.join(errors)}. Error reason: {last_error_reason}"
+        )
 
-        if not errors:
-            if auth.is_authenticated:
-                return True
-            else:
-                return False
-        else:
-            last_error_reason = auth.get_last_error_reason()
-            current_app.logger.error('Error processing %s. Error reason: %s' % (', '.join(errors), last_error_reason))
 
-            if current_app.config.get('ONELOGIN_LOG_SAML_RESPONSE'):
-                auth_response = auth.get_last_response_xml()
-                current_app.logger.debug('SAML response: %s' % auth_response)
+        if current_app.config.get('ONELOGIN_LOG_SAML_RESPONSE'):
+            auth_response = auth.get_last_response_xml()
+            current_app.logger.debug(f'SAML response: {auth_response}')
 
-            return False
+        return False
 
     def post(self):
         if "onelogin" not in current_app.config.get("ACTIVE_PROVIDERS"):
@@ -431,36 +435,37 @@ class OneLogin(Resource):
         return_to = args['return_to']
 
         if args['acs'] != None:
-            # valids the SAML response and checks if successfully authenticated
-            if self._consumer(auth):
-                email = auth.get_attribute(current_app.config.get("ONELOGIN_EMAIL_FIELD"))[0]
-                user = User.query.filter(User.email == email).first()
+            if not self._consumer(auth):
+                return dict(message='OneLogin authentication failed.'), 403
+            email = auth.get_attribute(current_app.config.get("ONELOGIN_EMAIL_FIELD"))[0]
+            user = User.query.filter(User.email == email).first()
 
-                # if we get an sso user create them an account
-                if not user:
-                    user = User(
-                        email=email,
-                        active=True,
-                        role=current_app.config.get('ONELOGIN_DEFAULT_ROLE')
-                        # profile_picture=profile.get('thumbnailPhotoUrl')
-                    )
-                    db.session.add(user)
-                    db.session.commit()
-                    db.session.refresh(user)
-
-                # Tell Flask-Principal the identity changed
-                identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
-                login_user(user)
+            # if we get an sso user create them an account
+            if not user:
+                user = User(
+                    email=email,
+                    active=True,
+                    role=current_app.config.get('ONELOGIN_DEFAULT_ROLE')
+                    # profile_picture=profile.get('thumbnailPhotoUrl')
+                )
+                db.session.add(user)
                 db.session.commit()
                 db.session.refresh(user)
 
-                self_url = OneLogin_Saml2_Utils.get_self_url(self.req)
-                if 'RelayState' in request.form and self_url != request.form['RelayState']:
-                    return redirect(auth.redirect_to(request.form['RelayState']), code=302)
-                else:
-                    return redirect(current_app.config.get('BASE_URL'), code=302)
-            else:
-                return dict(message='OneLogin authentication failed.'), 403
+            # Tell Flask-Principal the identity changed
+            identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
+            login_user(user)
+            db.session.commit()
+            db.session.refresh(user)
+
+            self_url = OneLogin_Saml2_Utils.get_self_url(self.req)
+            return (
+                redirect(auth.redirect_to(request.form['RelayState']), code=302)
+                if 'RelayState' in request.form
+                and self_url != request.form['RelayState']
+                else redirect(current_app.config.get('BASE_URL'), code=302)
+            )
+
         elif args['sls'] != None:
             return dict(message='OneLogin SLS not implemented yet.'), 405
         else:

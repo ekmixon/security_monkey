@@ -45,7 +45,7 @@ def sub_list(l):
         elif type(i) is list:
             r.append(sub_list(i))
         else:
-            print(("Unknown Type: {}".format(type(i))))
+            print(f"Unknown Type: {type(i)}")
     #r = sorted(r)
     return r
 
@@ -60,24 +60,21 @@ def sub_dict(d):
         elif type(d[k]) is dict:
             r[k] = sub_dict(d[k])
         else:
-            print(("Unknown Type: {}".format(type(d[k]))))
+            print(f"Unknown Type: {type(d[k])}")
     return r
 
 
 def check_rfc_1918(cidr):
-        """
+    """
         EC2-Classic SG's should never use RFC-1918 CIDRs
         """
-        if ipaddr.IPNetwork(cidr) in ipaddr.IPNetwork('10.0.0.0/8'):
-            return True
+    if ipaddr.IPNetwork(cidr) in ipaddr.IPNetwork('10.0.0.0/8'):
+        return True
 
-        if ipaddr.IPNetwork(cidr) in ipaddr.IPNetwork('172.16.0.0/12'):
-            return True
+    if ipaddr.IPNetwork(cidr) in ipaddr.IPNetwork('172.16.0.0/12'):
+        return True
 
-        if ipaddr.IPNetwork(cidr) in ipaddr.IPNetwork('192.168.0.0/16'):
-            return True
-
-        return False
+    return ipaddr.IPNetwork(cidr) in ipaddr.IPNetwork('192.168.0.0/16')
 
 
 def find_modules(folder):
@@ -128,37 +125,36 @@ def send_email(subject=None, recipients=None, html=""):
         app.logger.warn("[?] Emails are disabled in the config. But the send_email function was still called. No emails are being sent.")
         return
 
-    recipients = recipients if recipients else []
-    plain_txt_email = "Please view in a mail client that supports HTML."
+    recipients = recipients or []
     if app.config.get('EMAILS_USE_SMTP'):
+        plain_txt_email = "Please view in a mail client that supports HTML."
         try:
             with app.app_context():
                 msg = Message(subject, recipients=recipients)
                 msg.body = plain_txt_email
                 msg.html = html
                 mail.send(msg)
-            app.logger.debug("Emailed {} - {} ".format(recipients, subject))
+            app.logger.debug(f"Emailed {recipients} - {subject} ")
         except Exception as e:
-            m = "Failed to send failure message with subject: {}\n{} {}".format(subject, Exception, e)
+            m = f"Failed to send failure message with subject: {subject}\n{Exception} {e}"
             app.logger.warn(m)
             app.logger.warn(traceback.format_exc())
 
-    else:
-        if recipients:
-            try:
-                ses = boto3.client("ses", region_name=app.config.get('SES_REGION', AWS_DEFAULT_REGION))
-                ses.send_email(Source=app.config['MAIL_DEFAULT_SENDER'],
-                               Destination={"ToAddresses": recipients},
-                               Message={
-                                   "Subject": {"Data": subject},
-                                   "Body": {
-                                       "Html": {
-                                           "Data": html
-                                       }
+    elif recipients:
+        try:
+            ses = boto3.client("ses", region_name=app.config.get('SES_REGION', AWS_DEFAULT_REGION))
+            ses.send_email(Source=app.config['MAIL_DEFAULT_SENDER'],
+                           Destination={"ToAddresses": recipients},
+                           Message={
+                               "Subject": {"Data": subject},
+                               "Body": {
+                                   "Html": {
+                                       "Data": html
                                    }
-                               })
+                               }
+                           })
 
-            except Exception as e:
-                m = "Failed to send failure message with subject: {}\n{} {}".format(subject, Exception, e)
-                app.logger.warn(m)
-                app.logger.warn(traceback.format_exc())
+        except Exception as e:
+            m = f"Failed to send failure message with subject: {subject}\n{Exception} {e}"
+            app.logger.warn(m)
+            app.logger.warn(traceback.format_exc())

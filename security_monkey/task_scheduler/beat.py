@@ -61,20 +61,28 @@ def setup_the_tasks(sender, **kwargs):
                                                                                              name=account.name))
                     interval = monitor.watcher.get_interval()
                     if not interval:
-                        app.logger.debug("[/] Skipping watcher for technology: {} because it is set for external "
-                                         "monitoring.".format(monitor.watcher.index))
+                        app.logger.debug(
+                            f"[/] Skipping watcher for technology: {monitor.watcher.index} because it is set for external monitoring."
+                        )
+
                         continue
 
-                    app.logger.debug("[{}] Scheduling for technology: {}".format(account.type.name,
-                                                                                 monitor.watcher.index))
+                    app.logger.debug(
+                        f"[{account.type.name}] Scheduling for technology: {monitor.watcher.index}"
+                    )
+
 
                     # Start the task immediately:
                     task_account_tech.apply_async((account.name, monitor.watcher.index))
                     app.logger.debug("[-->] Scheduled immediate task")
 
                     schedule = interval * 60
-                    schedule_at_full_hour = get_sm_celery_config_value(celery_config, "schedule_at_full_hour", bool) or False
-                    if schedule_at_full_hour:
+                    if (
+                        schedule_at_full_hour := get_sm_celery_config_value(
+                            celery_config, "schedule_at_full_hour", bool
+                        )
+                        or False
+                    ):
                         if interval == 15: # 15 minute
                             schedule = crontab(minute="0,15,30,45")
                         elif interval == 60: # Hourly
@@ -85,24 +93,24 @@ def setup_the_tasks(sender, **kwargs):
                             schedule = crontab(minute="0", hour="0")
                         elif interval == 10080: # Weekly
                             schedule = crontab(minute="0", hour="0", day_of_week="0")
-                    
+
                     # Schedule it based on the schedule:
                     sender.add_periodic_task(schedule, task_account_tech.s(account.name, monitor.watcher.index))
-                    app.logger.debug("[+] Scheduled task to occur every {} minutes".format(interval))
+                    app.logger.debug(f"[+] Scheduled task to occur every {interval} minutes")
 
-                    # TODO: Due to a bug with Celery (https://github.com/celery/celery/issues/4041) we temporarily
-                    #       disabled this to avoid many duplicate events from getting added.
-                    # Also schedule a manual audit changer just in case it doesn't properly
-                    # audit (only for non-batched):
-                    # if not monitor.batch_support:
-                    #     sender.add_periodic_task(
-                    #         crontab(hour=10, day_of_week="mon-fri"), task_audit.s(account.name, monitor.watcher.index))
-                    #     app.logger.debug("[+] Scheduled task for tech: {} for audit".format(monitor.watcher.index))
-                    #
-                    # app.logger.debug("[{}] Completed scheduling for technology: {}".format(account.name,
-                    #                                                                        monitor.watcher.index))
+                                    # TODO: Due to a bug with Celery (https://github.com/celery/celery/issues/4041) we temporarily
+                                    #       disabled this to avoid many duplicate events from getting added.
+                                    # Also schedule a manual audit changer just in case it doesn't properly
+                                    # audit (only for non-batched):
+                                    # if not monitor.batch_support:
+                                    #     sender.add_periodic_task(
+                                    #         crontab(hour=10, day_of_week="mon-fri"), task_audit.s(account.name, monitor.watcher.index))
+                                    #     app.logger.debug("[+] Scheduled task for tech: {} for audit".format(monitor.watcher.index))
+                                    #
+                                    # app.logger.debug("[{}] Completed scheduling for technology: {}".format(account.name,
+                                    #                                                                        monitor.watcher.index))
 
-            app.logger.debug("[+] Completed scheduling tasks for account: {}".format(account.name))
+            app.logger.debug(f"[+] Completed scheduling tasks for account: {account.name}")
 
         # Schedule the task for clearing out old exceptions:
         app.logger.info("Scheduling task to clear out old exceptions.")
@@ -114,6 +122,6 @@ def setup_the_tasks(sender, **kwargs):
     except Exception as e:
         if sentry:
             sentry.captureException()
-        app.logger.error("[X] Scheduler Exception: {}".format(e))
+        app.logger.error(f"[X] Scheduler Exception: {e}")
         app.logger.error(traceback.format_exc())
         store_exception("scheduler", None, e)

@@ -29,21 +29,20 @@ from security_monkey.common.utils import send_email
 
 def get_subject(has_issues, has_new_issue, has_unjustified_issue, account, watcher_str):
     if has_new_issue:
-        return "NEW ISSUE - [{}] Changes in {}".format(account, watcher_str)
+        return f"NEW ISSUE - [{account}] Changes in {watcher_str}"
     elif has_issues and has_unjustified_issue:
-        return "[{}] Changes w/existing issues in {}".format(account, watcher_str)
-    elif has_issues and not has_unjustified_issue:
-        return "[{}] Changes w/justified issues in {}".format(account, watcher_str)
+        return f"[{account}] Changes w/existing issues in {watcher_str}"
+    elif has_issues:
+        return f"[{account}] Changes w/justified issues in {watcher_str}"
     else:
-        return "[{}] Changes in {}".format(account, watcher_str)
+        return f"[{account}] Changes in {watcher_str}"
 
 
 def report_content(content):
     jenv = get_jinja_env()
     template = jenv.get_template('jinja_change_email.html')
-    body = template.render(content)
     # app.logger.info(body)
-    return body
+    return template.render(content)
 
 
 class Alerter(object):
@@ -57,9 +56,9 @@ class Alerter(object):
         self.new = []
         self.delete = []
         self.changed = []
-        self.watchers_auditors = watchers_auditors if watchers_auditors else []
+        self.watchers_auditors = watchers_auditors or []
         users = User.query.filter(User.accounts.any(name=account)).filter(User.change_reports == 'ALL')\
-            .filter(User.active == True).all()  # noqa
+                .filter(User.active == True).all()  # noqa
         self.emails = [user.email for user in users]
         self.team_emails = app.config.get('SECURITY_TEAM_EMAIL', [])
 
@@ -92,11 +91,14 @@ class Alerter(object):
 
         watcher_types = [watcher.index for watcher in changed_watchers]
         watcher_str = ', '.join(watcher_types)
-        if len(changed_watchers) == 0:
+        if not changed_watchers:
             app.logger.info("Alerter: no changes found")
             return
 
-        app.logger.info("Alerter: Found some changes in {}: {}".format(self.account, watcher_str))
+        app.logger.info(
+            f"Alerter: Found some changes in {self.account}: {watcher_str}"
+        )
+
         content = {'watchers': changed_watchers}
         body = report_content(content)
         subject = get_subject(has_issues, has_new_issue, has_unjustified_issue, self.account, watcher_str)

@@ -13,8 +13,7 @@ export_blueprint = Blueprint("export", __name__)
 @export_blueprint.route("/export/items")
 @rbac.allow(roles=["View"], methods=["GET"])
 def export_items():
-    args = {}
-    args['regions'] = request.args.get('regions', None)
+    args = {'regions': request.args.get('regions', None)}
     args['accounts'] = request.args.get('accounts', None)
     args['active'] = request.args.get('active', None)
     args['names'] = request.args.get('names', None)
@@ -49,7 +48,10 @@ def export_items():
         query = query.filter(ItemRevision.active == active)
     if 'searchconfig' in args:
         searchconfig = args['searchconfig']
-        query = query.filter(cast(ItemRevision.config, String).ilike('%{}%'.format(searchconfig)))
+        query = query.filter(
+            cast(ItemRevision.config, String).ilike(f'%{searchconfig}%')
+        )
+
 
     # Eager load the joins and leave the config column out of this.
     query = query.options(joinedload('issues'))
@@ -90,8 +92,7 @@ def export_items():
 @export_blueprint.route("/export/issues")
 @rbac.allow(roles=["View"], methods=["GET"])
 def export_issues():
-    args = {}
-    args['regions'] = request.args.get('regions', None)
+    args = {'regions': request.args.get('regions', None)}
     args['accounts'] = request.args.get('accounts', None)
     args['active'] = request.args.get('active', None)
     args['names'] = request.args.get('names', None)
@@ -127,10 +128,15 @@ def export_issues():
         search = args['searchconfig'].split(',')
         conditions = []
         for searchterm in search:
-            conditions.append(ItemAudit.issue.ilike('%{}%'.format(searchterm)))
-            conditions.append(ItemAudit.notes.ilike('%{}%'.format(searchterm)))
-            conditions.append(ItemAudit.justification.ilike('%{}%'.format(searchterm)))
-            conditions.append(Item.name.ilike('%{}%'.format(searchterm)))
+            conditions.extend(
+                (
+                    ItemAudit.issue.ilike(f'%{searchterm}%'),
+                    ItemAudit.notes.ilike(f'%{searchterm}%'),
+                    ItemAudit.justification.ilike(f'%{searchterm}%'),
+                    Item.name.ilike(f'%{searchterm}%'),
+                )
+            )
+
         query = query.filter(or_(*conditions))
     if 'enabledonly' in args:
         query = query.join((AuditorSettings, AuditorSettings.id == ItemAudit.auditor_setting_id))

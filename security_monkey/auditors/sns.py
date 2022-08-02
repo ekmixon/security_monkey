@@ -38,9 +38,9 @@ class SNSAuditor(ResourcePolicyAuditor):
         """
         alert on empty SNS Policy
         """
-        tag = "SNS Topic Policy is empty"
-        severity = 1
         if snsitem.config.get('policy', {}) == {}:
+            tag = "SNS Topic Policy is empty"
+            severity = 1
             self.add_issue(severity, tag, snsitem, notes=None)
 
     def check_subscriptions_crossaccount(self, item):

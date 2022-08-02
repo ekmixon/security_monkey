@@ -39,7 +39,7 @@ class User(Base):
     role = sa.Column(sa.String(30))
 
     def __str__(self):
-        return '<User id=%s email=%s>' % (self.id, self.email)
+        return f'<User id={self.id} email={self.email}>'
 
 
 def upgrade():
@@ -53,13 +53,15 @@ def upgrade():
 
     for user in users:
         # If the password isn't bcrypted, then delete it -- Also output that it was deleted!
-        if user.password:
-            if not re.match("^\$2[ayb]\$.{56}$", user.password):
-                print("[!] User: {} has a plaintext password! Deleting the password!".format(user.email))
-                user.password = ""
-                session.add(user)
-                session.commit()
-                print("[-] Deleted plaintext password from user: {}'s account".format(user.email))
+        if user.password and not re.match("^\$2[ayb]\$.{56}$", user.password):
+            print(
+                f"[!] User: {user.email} has a plaintext password! Deleting the password!"
+            )
+
+            user.password = ""
+            session.add(user)
+            session.commit()
+            print(f"[-] Deleted plaintext password from user: {user.email}'s account")
 
     print("[@] Completed plaintext password check.")
 

@@ -212,17 +212,12 @@ def main(profile = None):
       assume_policy = json.dumps(current_policy)
 
   # Add SecurityMonkey monitoring role and link it to supervisor ARN
-  if not role_exist:
-    role = iam.create_role(role_name, assume_policy)
-  else:
-    role = iam.update_assume_role_policy(role_name, assume_policy)
-
+  role = (iam.update_assume_role_policy(role_name, assume_policy)
+          if role_exist else iam.create_role(role_name, assume_policy))
   # Add our own role policy
   iam.put_role_policy(role_name, role_policy_name, security_policy)
   print('Added role "%s", linked to ARN "%s".' % (role_name, secmonkey_arn))
 
 if __name__ == "__main__":
-  profile = None
-  if len(sys.argv) >= 2:
-    profile = sys.argv[1]
+  profile = sys.argv[1] if len(sys.argv) >= 2 else None
   main(profile)

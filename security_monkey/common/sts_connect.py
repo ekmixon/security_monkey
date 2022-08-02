@@ -59,7 +59,7 @@ def connect(account_name, connection_type, **args):
             role_name = account.getCustom("role_name")
         if account.getCustom("external_id") and account.getCustom("external_id") != '':
             external_id = account.getCustom("external_id")
-        arn = ARN_PREFIX + ':iam::' + account.identifier + ':role/' + role_name
+        arn = f'{ARN_PREFIX}:iam::{account.identifier}:role/{role_name}'
         assume_role_kwargs = {
             'RoleArn': arn,
             'RoleSessionName': 'secmonkey'
@@ -92,11 +92,8 @@ def connect(account_name, connection_type, **args):
             aws_session_token=role['Credentials']['SessionToken'],
             region_name=region
         )
-        if api == 'resource':
-            return session.resource(tech)
-        return session.client(tech)
-
-    module = __import__("boto.{}".format(connection_type))
+        return session.resource(tech) if api == 'resource' else session.client(tech)
+    module = __import__(f"boto.{connection_type}")
     for subm in connection_type.split('.'):
         module = getattr(module, subm)
 

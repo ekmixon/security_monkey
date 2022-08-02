@@ -44,10 +44,11 @@ class AccountListPut(AuthenticatedService):
 
     def put(self):
         values = json.loads(request.json)
-        app.logger.debug("Account bulk update {}".format(values))
+        app.logger.debug(f"Account bulk update {values}")
         for account_name in list(values.keys()):
-            account = Account.query.filter(Account.name == account_name).first()
-            if account:
+            if account := Account.query.filter(
+                Account.name == account_name
+            ).first():
                 account.active = values[account_name]
                 db.session.add(account)
 

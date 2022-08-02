@@ -96,8 +96,7 @@ def setup_user(email, groups=None, default_role='View'):
         return user
 
     role = default_role
-    groups = groups or []
-    if groups:
+    if groups := groups or []:
         if app.config.get('ADMIN_GROUP') and app.config.get('ADMIN_GROUP') in groups:
             role = 'Admin'
         elif app.config.get('JUSTIFY_GROUP') and app.config.get('JUSTIFY_GROUP') in groups:

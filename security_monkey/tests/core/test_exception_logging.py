@@ -26,9 +26,14 @@ class ExceptionLoggingTestCase(SecurityMonkeyTestCase):
         self.account = Account(identifier="012345678910", name="testing",
                                account_type_id=account_type_result.id)
         self.technology = Technology(name="iamrole")
-        self.item = Item(region="us-west-2", name="testrole",
-                         arn=ARN_PREFIX + ":iam::012345678910:role/testrole", technology=self.technology,
-                         account=self.account)
+        self.item = Item(
+            region="us-west-2",
+            name="testrole",
+            arn=f"{ARN_PREFIX}:iam::012345678910:role/testrole",
+            technology=self.technology,
+            account=self.account,
+        )
+
 
         db.session.add(self.account)
         db.session.add(self.technology)
@@ -153,7 +158,7 @@ class ExceptionLoggingTestCase(SecurityMonkeyTestCase):
             assert exc_log.ttl.month == ttl_month
             assert exc_log.ttl.day == ttl_day
 
-            for x in range(0, i):
+            for x in range(i):
                 attr = getattr(exc_log, attrs[x][0])
                 if isinstance(attr, text_type):
                     assert attr == attrs[x][1]
@@ -184,9 +189,9 @@ class ExceptionLoggingTestCase(SecurityMonkeyTestCase):
     def test_exception_clearing(self):
         location = ("iamrole", "testing", "us-west-2", "testrole")
 
-        for i in range(0, 5):
+        for i in range(5):
             try:
-                raise ValueError("This is test: {}".format(i))
+                raise ValueError(f"This is test: {i}")
             except ValueError as e:
                 test_exception = e
 

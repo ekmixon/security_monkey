@@ -46,8 +46,9 @@ def clean_stale_issues():
 def clean_account_issues(account):
     results = AuditorSettings.query.filter(AuditorSettings.account_id == account.id).all()
     for settings in results:
-        auditor_class = existing_auditor_classes.get(settings.auditor_class)
-        if auditor_class:
+        if auditor_class := existing_auditor_classes.get(
+            settings.auditor_class
+        ):
             if not auditor_class([account.name]).applies_to_account(account):
                 app.logger.info("Cleaning up %s issues for %s", settings.auditor_class, account.name)
                 _delete_issues(settings)

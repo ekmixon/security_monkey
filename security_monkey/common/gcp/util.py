@@ -47,8 +47,7 @@ def get_gcp_project_creds(account_names):
     accounts = Account.query.filter(Account.name.in_(account_names)).all()
 
     for account in accounts:
-        key_file = account.getCustom(creds_field)
-        if key_file:
+        if key_file := account.getCustom(creds_field):
             project_creds.append({'project': account.identifier, 'key_file': key_file})
         else:
             project_creds.append(account.identifier)
@@ -57,7 +56,7 @@ def get_gcp_project_creds(account_names):
 
 
 def gcp_resource_id_builder(service, identifier, project_id, region=''):
-    resource = 'gcp:%s:%s:%s:%s' % (project_id, region, service, identifier)
+    resource = f'gcp:{project_id}:{region}:{service}:{identifier}'
     return resource.replace('/', ':').replace('.', ':')
 
 
@@ -67,4 +66,4 @@ def modify(d, output='camelized'):
 
 def get_user_agent(**kwargs):
     from security_monkey.common.gcp.config import ApplicationConfig as appconfig
-    return 'security-monkey/%s' % appconfig.get_version()
+    return f'security-monkey/{appconfig.get_version()}'

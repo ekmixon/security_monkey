@@ -35,8 +35,7 @@ class ACMAuditor(Auditor):
         """
         alert when a cert's expiration is within 30 days
         """
-        expiration = cert_item.config.get('NotAfter', None)
-        if expiration:
+        if expiration := cert_item.config.get('NotAfter', None):
             expiration = parser.parse(expiration)
             now = expiration.now(tzutc())
             time_to_expiration = (expiration - now).days
@@ -48,8 +47,7 @@ class ACMAuditor(Auditor):
         """
         alert when a cert's expiration is within 60 days
         """
-        expiration = cert_item.config.get('NotAfter', None)
-        if expiration:
+        if expiration := cert_item.config.get('NotAfter', None):
             expiration = parser.parse(expiration)
             now = expiration.now(tzutc())
             time_to_expiration = (expiration - now).days
@@ -61,8 +59,7 @@ class ACMAuditor(Auditor):
         """
         alert when a cert is expired
         """
-        expiration = cert_item.config.get('NotAfter', None)
-        if expiration:
+        if expiration := cert_item.config.get('NotAfter', None):
             expiration = parser.parse(expiration)
             now = expiration.now(tzutc())
             time_to_expiration = (expiration - now).days

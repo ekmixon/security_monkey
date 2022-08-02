@@ -20,13 +20,13 @@ class CloudAuxBatchedWatcher(CloudAuxWatcher):
             return self.list_method(**kwargs['conn_dict'])
 
         @iter_account_region(self.service_name, accounts=self.account_identifiers,
-                             regions=self._get_regions(), conn_type='dict')
+                                 regions=self._get_regions(), conn_type='dict')
         def get_item_list(**kwargs):
             kwargs, exception_map = self._add_exception_fields_to_kwargs(**kwargs)
             items = invoke_list_method(**kwargs)
 
             if not items:
-                items = list()
+                items = []
 
             return items, exception_map
 
@@ -46,7 +46,7 @@ class CloudAuxBatchedWatcher(CloudAuxWatcher):
         # We need to embed the region into the item in the total list, hence the "TBD"
         @iter_account_region(self.service_name, accounts=self.account_identifiers, conn_type='dict', regions=["TBD"])
         def slurp_items(**kwargs):
-            item_list = list()
+            item_list = []
             kwargs, exception_map = self._add_exception_fields_to_kwargs(**kwargs)
             item_counter = self.batch_counter * self.batched_size
             skip_counter = 0    # Need to track number of items skipped so that the batches don't overlap
@@ -76,7 +76,7 @@ class CloudAuxBatchedWatcher(CloudAuxWatcher):
                     # region may be different.  Extract the actual region from item_details.
                     # Otherwise, just use the region where the boto connection was made.
                     record_region = self.override_region or \
-                                    item_details.get('Region') or kwargs['conn_dict']['region']
+                                        item_details.get('Region') or kwargs['conn_dict']['region']
                     item = CloudAuxChangeItem.from_item(
                         name=item_name,
                         item=item_details,

@@ -35,7 +35,7 @@ class OpenStackObjectContainerAuditor(Auditor):
     def check_acls(self, container_item):
         read_acl = container_item.config.get("read_ACL")
         write_acl = container_item.config.get("write_ACL")
-        
+
         if read_acl:
             for acl in read_acl.split(","):
                 if acl == ".r:*":

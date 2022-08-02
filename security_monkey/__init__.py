@@ -19,6 +19,7 @@
 .. moduleauthor:: Patrick Kelley <patrick@netflix.com>
 
 """
+
 import os
 import stat
 
@@ -69,7 +70,7 @@ if app.config.get("AWS_GOVCLOUD"):
     ARN_PARTITION = 'aws-us-gov'
     AWS_DEFAULT_REGION = 'us-gov-west-1'
 
-ARN_PREFIX = 'arn:' + ARN_PARTITION
+ARN_PREFIX = f'arn:{ARN_PARTITION}'
 
 db = SQLAlchemy(app)
 
@@ -93,7 +94,7 @@ csrf.init_app(app)
 
 @app.errorhandler(CSRFError)
 def csrf_error(reason):
-    app.logger.debug("CSRF ERROR: {}".format(reason))
+    app.logger.debug(f"CSRF ERROR: {reason}")
     return render_template('csrf_error.json', reason=reason), 400
 
 
@@ -232,8 +233,7 @@ api.add_resource(WatcherConfigPut, '/api/1/watcher_config/<int:id>')
 
 ## Jira Sync
 from security_monkey.jirasync import JiraSync
-jirasync_file = os.environ.get('SECURITY_MONKEY_JIRA_SYNC')
-if jirasync_file:
+if jirasync_file := os.environ.get('SECURITY_MONKEY_JIRA_SYNC'):
     try:
         jirasync = JiraSync(jirasync_file)
     except Exception as e:
@@ -331,25 +331,26 @@ def setup_logging():
             }
         }
     """
-    if not app.debug:
-        if app.config.get('LOG_CFG'):
-            # initialize the Flask logger (removes all handlers)
-            _ = app.logger
-            dictConfig(app.config.get('LOG_CFG'))
+    if app.debug:
+        return
+    if app.config.get('LOG_CFG'):
+        # initialize the Flask logger (removes all handlers)
+        _ = app.logger
+        dictConfig(app.config.get('LOG_CFG'))
+    else:
+        # capability with previous config settings
+        # Should have LOG_FILE and LOG_LEVEL set
+        if app.config.get('LOG_FILE') is not None:
+            handler = RotatingFileHandler(app.config.get('LOG_FILE'), maxBytes=10000000, backupCount=100)
         else:
-            # capability with previous config settings
-            # Should have LOG_FILE and LOG_LEVEL set
-            if app.config.get('LOG_FILE') is not None:
-                handler = RotatingFileHandler(app.config.get('LOG_FILE'), maxBytes=10000000, backupCount=100)
-            else:
-                handler = StreamHandler(stream=sys.stderr)
+            handler = StreamHandler(stream=sys.stderr)
 
-            handler.setFormatter(
-                Formatter('%(asctime)s %(levelname)s: %(message)s '
-                          '[in %(pathname)s:%(lineno)d]')
-            )
-            app.logger.setLevel(app.config.get('LOG_LEVEL', DEBUG))
-            app.logger.addHandler(handler)
+        handler.setFormatter(
+            Formatter('%(asctime)s %(levelname)s: %(message)s '
+                      '[in %(pathname)s:%(lineno)d]')
+        )
+        app.logger.setLevel(app.config.get('LOG_LEVEL', DEBUG))
+        app.logger.addHandler(handler)
 
 
 setup_logging()

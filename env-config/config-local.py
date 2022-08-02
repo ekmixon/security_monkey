@@ -60,7 +60,7 @@ WEB_PORT = '5000'
 WEB_PATH = '/static/ui.html'
 FRONTED_BY_NGINX = False
 NGINX_PORT = '80'
-BASE_URL = 'http://{}:{}{}'.format(FQDN, WEB_PORT, WEB_PATH)
+BASE_URL = f'http://{FQDN}:{WEB_PORT}{WEB_PATH}'
 DEBUG = False
 
 SECRET_KEY = '<INSERT_RANDOM_STRING_HERE>'

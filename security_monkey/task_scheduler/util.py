@@ -20,8 +20,10 @@ from security_monkey.exceptions import InvalidCeleryConfigurationType
 
 def get_celery_config_file():
     """This gets the Celery configuration file as a module that Celery uses"""
-    return importlib.import_module("security_monkey.{}".format(os.environ.get("SM_CELERY_CONFIG", "celeryconfig")),
-                                   "security_monkey")
+    return importlib.import_module(
+        f'security_monkey.{os.environ.get("SM_CELERY_CONFIG", "celeryconfig")}',
+        "security_monkey",
+    )
 
 
 def make_celery(app):

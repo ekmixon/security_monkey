@@ -12,7 +12,7 @@ class ELBv2TestCase(SecurityMonkeyTestCase):
         # 0.0.0.0/0
         from security_monkey.auditors.elbv2 import ELBv2Auditor
         auditor = ELBv2Auditor(accounts=["012345678910"])
-        
+
         alb = {
             'Scheme': 'internet-facing',
             'SecurityGroups': ['sg-12345678'],
@@ -27,16 +27,19 @@ class ELBv2TestCase(SecurityMonkeyTestCase):
         item = CloudAuxChangeItem(
             index='alb',
             account='TEST_ACCOUNT',
-            name='MyELB', 
-            arn=ARN_PREFIX + ":elasticloadbalancing:" + AWS_DEFAULT_REGION + ":012345678910:loadbalancer/MyELB",
-            config=alb)
+            name='MyELB',
+            arn=f"{ARN_PREFIX}:elasticloadbalancing:{AWS_DEFAULT_REGION}:012345678910:loadbalancer/MyELB",
+            config=alb,
+        )
+
 
         def mock_get_auditor_support_items(*args, **kwargs):
+
             class MockIngressIssue:
                 issue = 'Internet Accessible'
                 notes = 'Entity: [cidr:0.0.0.0/0] Access: [ingress:tcp:80]'
                 score = 10
-            
+
             class MockIngressAllProtocolsIssue(MockIngressIssue):
                 notes = 'Entity: [cidr:0.0.0.0/0] Access: [ingress:all_protocols:all_ports]'
 
@@ -52,8 +55,11 @@ class ELBv2TestCase(SecurityMonkeyTestCase):
             class MockNonConformingIssue(MockIngressIssue):
                 notes = 'Some random rule.'
 
+
+
             class DBItem:
-                issues = list()
+                issues = []
+
 
             from security_monkey.watchers.security_group import SecurityGroupItem
             sg_item = SecurityGroupItem(
@@ -107,9 +113,11 @@ class ELBv2TestCase(SecurityMonkeyTestCase):
         item = CloudAuxChangeItem(
             index='alb',
             account='TEST_ACCOUNT',
-            name='MyALB', 
-            arn=ARN_PREFIX + ":elasticloadbalancing:" + AWS_DEFAULT_REGION + ":012345678910:loadbalancer/app/MyALB/7f734113942",
-            config=alb)
+            name='MyALB',
+            arn=f"{ARN_PREFIX}:elasticloadbalancing:{AWS_DEFAULT_REGION}:012345678910:loadbalancer/app/MyALB/7f734113942",
+            config=alb,
+        )
+
 
         auditor.check_logging(item)
         self.assertEqual(len(item.audit_issues), 1)
@@ -131,9 +139,11 @@ class ELBv2TestCase(SecurityMonkeyTestCase):
         item = CloudAuxChangeItem(
             index='alb',
             account='TEST_ACCOUNT',
-            name='MyALB', 
-            arn=ARN_PREFIX + ":elasticloadbalancing:" + AWS_DEFAULT_REGION + ":012345678910:loadbalancer/app/MyALB/7f734113942",
-            config=alb)
+            name='MyALB',
+            arn=f"{ARN_PREFIX}:elasticloadbalancing:{AWS_DEFAULT_REGION}:012345678910:loadbalancer/app/MyALB/7f734113942",
+            config=alb,
+        )
+
 
         auditor.check_deletion_protection(item)
         self.assertEqual(len(item.audit_issues), 1)
@@ -150,15 +160,17 @@ class ELBv2TestCase(SecurityMonkeyTestCase):
                 'Port': 80,
                 'SslPolicy': None
             }]}
-            
+
 
         from security_monkey.cloudaux_watcher import CloudAuxChangeItem
         item = CloudAuxChangeItem(
             index='alb',
             account='TEST_ACCOUNT',
-            name='MyALB', 
-            arn=ARN_PREFIX + ":elasticloadbalancing:" + AWS_DEFAULT_REGION + ":012345678910:loadbalancer/app/MyALB/7f734113942",
-            config=alb)
+            name='MyALB',
+            arn=f"{ARN_PREFIX}:elasticloadbalancing:{AWS_DEFAULT_REGION}:012345678910:loadbalancer/app/MyALB/7f734113942",
+            config=alb,
+        )
+
 
         auditor.check_ssl_policy(item)
         self.assertEqual(len(item.audit_issues), 0)

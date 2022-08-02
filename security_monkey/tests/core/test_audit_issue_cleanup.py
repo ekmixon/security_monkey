@@ -81,9 +81,14 @@ class AuditIssueCleanupTestCase(SecurityMonkeyTestCase):
                                account_type_id=account_type_result.id)
 
         self.technology = Technology(name="iamrole")
-        item = Item(region="us-west-2", name="testrole",
-                    arn=ARN_PREFIX + ":iam::012345678910:role/testrole", technology=self.technology,
-                    account=self.account)
+        item = Item(
+            region="us-west-2",
+            name="testrole",
+            arn=f"{ARN_PREFIX}:iam::012345678910:role/testrole",
+            technology=self.technology,
+            account=self.account,
+        )
+
 
         db.session.add(self.account)
         db.session.add(self.technology)

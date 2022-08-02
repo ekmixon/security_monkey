@@ -54,7 +54,7 @@ class SNSAuditorTestCase(SecurityMonkeyTestCase):
 
     def test_check_snstopicpolicy_empty(self):
         auditor = SNSAuditor(accounts=['TEST_ACCOUNT'])
-        item = SNSItem(config=dict())
+        item = SNSItem(config={})
         auditor.check_snstopicpolicy_empty(item)
 
         self.assertEqual(len(item.audit_issues), 1)

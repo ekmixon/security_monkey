@@ -38,4 +38,6 @@ class SlackAlerter(object, metaclass=custom_alerter.AlerterType):
 
                 except Exception as e:
                     app.logger.exception(e)
-                    app.logger.error("something has gone wrong with the slack post. Please check your configuration. " + e)
+                    app.logger.error(
+                        f"something has gone wrong with the slack post. Please check your configuration. {e}"
+                    )

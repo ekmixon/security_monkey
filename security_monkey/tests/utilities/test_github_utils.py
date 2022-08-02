@@ -40,8 +40,13 @@ class GitHubUtilsTestCase(SecurityMonkeyTestCase):
         # Tests need to be run from the working dir such that `security_monkey/tests/utilities/templates/github_creds`
         # can be found!
         for x in ["one", "two", "three"]:
-            account = Account(name="Org-{}".format(x), account_type_id=self.account_type.id,
-                                   identifier="Org-{}".format(x), active=True)
+            account = Account(
+                name=f"Org-{x}",
+                account_type_id=self.account_type.id,
+                identifier=f"Org-{x}",
+                active=True,
+            )
+
             account.custom_fields.append(AccountTypeCustomValues(name="access_token_file",
                                                                  value="security_monkey/tests/"
                                                                        "utilities/templates/github_creds"))
@@ -55,7 +60,7 @@ class GitHubUtilsTestCase(SecurityMonkeyTestCase):
         creds = get_github_creds(["Org-one", "Org-two", "Org-three"])
 
         for x in ["one", "two", "three"]:
-            assert creds["Org-{}".format(x)] == "token-{}".format(x)
+            assert creds[f"Org-{x}"] == f"token-{x}"
 
         # And without one specified:
         db.session.add(Account(name="Org-BAD", account_type_id=self.account_type.id,
@@ -213,27 +218,25 @@ class GitHubUtilsTestCase(SecurityMonkeyTestCase):
         }
         """)
 
-        # Grab a list of all _url fields:
-        outer_fields_to_remove = []
         total_outer_fields = len(list(github_blob.keys()))
 
-        org_fields_to_remove = []
         total_org_fields = len(list(github_blob["organization"].keys()))
 
-        owner_fields_to_remove = []
         total_owner_fields = len(list(github_blob["owner"].keys()))
 
-        for field in github_blob.keys():
-            if "_url" in field:
-                outer_fields_to_remove.append(field)
+        outer_fields_to_remove = [
+            field for field in github_blob.keys() if "_url" in field
+        ]
 
-        for field in github_blob["organization"].keys():
-            if "_url" in field:
-                org_fields_to_remove.append(field)
+        org_fields_to_remove = [
+            field
+            for field in github_blob["organization"].keys()
+            if "_url" in field
+        ]
 
-        for field in github_blob["owner"].keys():
-            if "_url" in field:
-                owner_fields_to_remove.append(field)
+        owner_fields_to_remove = [
+            field for field in github_blob["owner"].keys() if "_url" in field
+        ]
 
         # Remove the fields:
         new_blob = strip_url_fields(github_blob)
